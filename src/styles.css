@@ -232,6 +232,19 @@
     box-shadow: 0 12px 32px -14px oklch(0.6 0.12 350 / 0.4);
   }
 
+  /* 메인 타이틀 — 예시처럼 굵은 핑크 글자 + 흰 아웃라인 (주아체) */
+  .main-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    color: #ff5d9e;
+    -webkit-text-stroke: 5px #ffffff;
+    paint-order: stroke fill;
+    letter-spacing: 0.02em;
+    text-shadow:
+      0 5px 0 rgba(208, 54, 110, 0.3),
+      0 10px 16px rgba(208, 54, 110, 0.25);
+  }
+
   /* 리본 배너 타이틀 */
   .ribbon-title {
     display: inline-block;

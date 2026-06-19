@@ -410,9 +410,13 @@ function MainScreen({ onStart }: { onStart: () => void }) {
         <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
 
         {/* 타이틀 오버레이 (이미지에는 글자가 없으므로 앱에서 얹는다) */}
-        <div className="absolute inset-x-0 top-6 flex flex-col items-center px-4">
-          <div className="ribbon-title text-2xl">👑 빙그레 왕국 👑</div>
-          <p className="mt-2 rounded-full bg-white/70 px-3 py-0.5 font-hand text-xs text-foreground shadow-sm">
+        <div className="absolute inset-x-0 top-7 flex flex-col items-center px-4">
+          <h1 className="flex items-center gap-2 text-4xl">
+            <span className="text-3xl">👑</span>
+            <span className="main-title">빙그레 왕국</span>
+            <span className="text-3xl">👑</span>
+          </h1>
+          <p className="mt-3 rounded-full bg-white/75 px-4 py-1 font-hand text-sm font-bold text-foreground shadow-sm">
             오늘도 맛있는 즐거움이 가득한 곳
           </p>
         </div>
