@@ -410,14 +410,32 @@ function MainScreen({ onStart }: { onStart: () => void }) {
       <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
         <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
 
-        {/* 타이틀 로고 오버레이 (logo.png — 투명 배경) + 리본에 부제 */}
-        <div className="absolute inset-x-0 top-3 flex justify-center px-3">
-          <div className="relative w-[96%] max-w-[380px]">
+        {/* 타이틀 로고 오버레이 (logo.png — 투명 배경) + 리본 곡선에 부제 */}
+        <div className="absolute inset-x-0 top-2 flex justify-center px-1">
+          <div className="relative w-full max-w-[440px]">
             <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
-            {/* 리본 띠 중심 ≈ 이미지 높이의 58% (픽셀 측정) */}
-            <p className="absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-hand text-xs font-bold text-[#b14a72]">
-              오늘도 맛있는 즐거움이 가득한 곳
-            </p>
+            {/* 부제를 리본 아치 곡선(픽셀 측정: 가운데 위로 살짝 휨)에 태운다 */}
+            <svg
+              viewBox="0 0 1536 1024"
+              preserveAspectRatio="xMidYMid meet"
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              aria-hidden="true"
+            >
+              <defs>
+                <path id="ribbonPath" d="M 445 606 Q 768 568 1092 606" fill="none" />
+              </defs>
+              <text
+                textAnchor="middle"
+                fill="#b14a72"
+                fontWeight={700}
+                fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
+                fontSize={46}
+              >
+                <textPath href="#ribbonPath" startOffset="50%">
+                  오늘도 맛있는 즐거움이 가득한 곳
+                </textPath>
+              </text>
+            </svg>
           </div>
         </div>
 
