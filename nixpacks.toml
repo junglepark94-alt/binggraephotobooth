@@ -1,0 +1,10 @@
+# Railway / Nixpacks 빌드 정의 (런타임: Bun).
+# 시작 명령은 railway.json의 deploy.startCommand("bun run start")가 담당한다.
+[phases.setup]
+nixPkgs = ["bun"]
+
+[phases.install]
+cmds = ["bun install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["bun run build"]

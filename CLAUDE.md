@@ -21,8 +21,15 @@ bunx tsc --noEmit  # 타입체크
 
 - **TanStack Start** (파일 기반 라우팅 + SSR) on **React 19**
 - **Vite 7** + **Tailwind CSS 4** + **shadcn/ui** (new-york 스타일, `src/components/ui`)
-- **Cloudflare Workers** 배포 타깃 (`wrangler.jsonc`, `src/server.ts`)
+- **Railway** 배포 타깃 (Node/Bun 서버). `vite.config.ts`의 `cloudflare: false`로 Workers 타깃을 끄고,
+  SSR fetch 핸들러(`dist/server/server.js`)를 `serve.ts`(Bun.serve)가 감싸 정적 파일과 함께 서빙한다.
+  > `wrangler.jsonc` / `src/server.ts`는 원래 Cloudflare Workers용. 현재 배포에는 미사용이지만 남겨둠.
 - 빌드 설정은 **`@lovable.dev/vite-tanstack-config`** 패키지가 대부분 캡슐화한다 (아래 주의 참고)
+
+### 배포 (Railway)
+- `bun run build` → `dist/client`(정적) + `dist/server/server.js`(SSR 핸들러) 생성.
+- `bun run start` → `serve.ts`가 `PORT`(기본 3000)에서 리슨, 정적 파일 우선 + SSR 폴백.
+- Railway는 GitHub 레포에서 자동 빌드: `nixpacks.toml`(install/build) + `railway.json`(startCommand) 참고.
 
 ## 아키텍처
 
