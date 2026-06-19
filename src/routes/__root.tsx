@@ -72,20 +72,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Binggrae Cut" },
-      { name: "description", content: "Phoho 4cut based on Binggrae" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Binggrae Cut" },
-      { property: "og:description", content: "Phoho 4cut based on Binggrae" },
+      { title: "빙그레 네컷 — 빙그레 왕국 여름 축제" },
+      {
+        name: "description",
+        content: "빙그레 왕국 여름 축제에서 즐기는 인생네컷. 프레임을 골라 브라우저에서 바로 찍어보세요.",
+      },
+      { property: "og:title", content: "빙그레 네컷" },
+      { property: "og:description", content: "빙그레 왕국 여름 축제에서 즐기는 인생네컷" },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Binggrae Cut" },
-      { name: "twitter:description", content: "Phoho 4cut based on Binggrae" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/86a77c51-5609-42e8-b3d0-d802a0a32231/id-preview-43dda6aa--d1e6279a-b097-44a3-94d2-f30794355440.lovable.app-1778820626173.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/86a77c51-5609-42e8-b3d0-d802a0a32231/id-preview-43dda6aa--d1e6279a-b097-44a3-94d2-f30794355440.lovable.app-1778820626173.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "빙그레 네컷" },
+      { name: "twitter:description", content: "빙그레 왕국 여름 축제에서 즐기는 인생네컷" },
     ],
     links: [
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@400;700&display=swap",
+      },
       {
         rel: "stylesheet",
         href: appCss,
@@ -100,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <head>
         <HeadContent />
       </head>

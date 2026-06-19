@@ -46,6 +46,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+  --font-display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-hand: "Gaegu", "Apple SD Gothic Neo", cursive;
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -62,26 +64,27 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.985 0.015 80);
-  --foreground: oklch(0.25 0.04 20);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.04 20);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.04 20);
-  --primary: oklch(0.68 0.21 25);
-  --primary-foreground: oklch(0.99 0.01 80);
-  --secondary: oklch(0.95 0.04 80);
-  --secondary-foreground: oklch(0.25 0.04 20);
-  --muted: oklch(0.95 0.02 80);
-  --muted-foreground: oklch(0.5 0.03 40);
-  --accent: oklch(0.9 0.12 90);
-  --accent-foreground: oklch(0.25 0.04 20);
+  /* 빙그레 왕국 여름 축제 — 파스텔 캔디 팔레트 (딸기핑크 주조 + 민트/스카이 보조) */
+  --radius: 1rem;
+  --background: oklch(0.975 0.02 350);
+  --foreground: oklch(0.33 0.06 350);
+  --card: oklch(0.995 0.006 350);
+  --card-foreground: oklch(0.33 0.06 350);
+  --popover: oklch(0.995 0.006 350);
+  --popover-foreground: oklch(0.33 0.06 350);
+  --primary: oklch(0.71 0.17 5);
+  --primary-foreground: oklch(0.99 0.01 350);
+  --secondary: oklch(0.9 0.08 175);
+  --secondary-foreground: oklch(0.36 0.06 200);
+  --muted: oklch(0.95 0.018 350);
+  --muted-foreground: oklch(0.54 0.05 350);
+  --accent: oklch(0.86 0.09 230);
+  --accent-foreground: oklch(0.32 0.07 250);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: oklch(0.9 0.035 350);
+  --input: oklch(0.9 0.035 350);
+  --ring: oklch(0.71 0.17 5);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -138,7 +141,112 @@
   }
 
   body {
-    background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-display);
+    background-color: var(--color-background);
+    /* 캔디 하늘(스카이→핑크→민트) + 은은한 물방울 패턴 */
+    background-image:
+      radial-gradient(circle at 50% -15%, oklch(0.9 0.08 230 / 0.55), transparent 55%),
+      radial-gradient(circle at 100% 0%, oklch(0.92 0.08 350 / 0.5), transparent 45%),
+      radial-gradient(circle at 0% 100%, oklch(0.92 0.08 150 / 0.42), transparent 45%),
+      radial-gradient(oklch(1 0 0 / 0.6) 1.5px, transparent 1.7px);
+    background-size:
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      24px 24px;
+    background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* 둥글둥글 캔디 버튼 — 두툼한 3D 눌림 효과 */
+  .candy-btn {
+    border-radius: 9999px;
+    font-weight: 800;
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--color-primary) 82%, white 18%),
+      var(--color-primary)
+    );
+    color: var(--color-primary-foreground);
+    box-shadow:
+      0 6px 0 0 color-mix(in oklch, var(--color-primary) 64%, black 24%),
+      0 14px 22px -10px color-mix(in oklch, var(--color-primary) 70%, transparent);
+    transition:
+      transform 0.12s ease,
+      box-shadow 0.12s ease,
+      filter 0.12s ease;
+  }
+  .candy-btn:hover:not(:disabled) {
+    filter: brightness(1.03);
+  }
+  .candy-btn:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 0 color-mix(in oklch, var(--color-primary) 64%, black 24%);
+  }
+  .candy-btn:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+
+  /* 민트 보조 버튼 */
+  .candy-btn-mint {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--color-secondary) 86%, white 14%),
+      var(--color-secondary)
+    );
+    color: var(--color-secondary-foreground);
+    box-shadow:
+      0 6px 0 0 color-mix(in oklch, var(--color-secondary) 58%, black 20%),
+      0 14px 22px -10px color-mix(in oklch, var(--color-secondary) 60%, transparent);
+  }
+  .candy-btn-mint:active:not(:disabled) {
+    box-shadow: 0 2px 0 0 color-mix(in oklch, var(--color-secondary) 58%, black 20%);
+  }
+
+  /* 스카이 강조 버튼 */
+  .candy-btn-sky {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--color-accent) 86%, white 14%),
+      var(--color-accent)
+    );
+    color: var(--color-accent-foreground);
+    box-shadow:
+      0 6px 0 0 color-mix(in oklch, var(--color-accent) 58%, black 20%),
+      0 14px 22px -10px color-mix(in oklch, var(--color-accent) 60%, transparent);
+  }
+  .candy-btn-sky:active:not(:disabled) {
+    box-shadow: 0 2px 0 0 color-mix(in oklch, var(--color-accent) 58%, black 20%);
+  }
+
+  /* 둥근 축제 카드 */
+  .festival-card {
+    border-radius: 1.5rem;
+    background: var(--color-card);
+    border: 2px solid color-mix(in oklch, var(--color-primary) 16%, white);
+    box-shadow: 0 12px 32px -14px oklch(0.6 0.12 350 / 0.4);
+  }
+
+  /* 리본 배너 타이틀 */
+  .ribbon-title {
+    display: inline-block;
+    border-radius: 9999px;
+    padding: 0.4rem 1.5rem;
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--color-primary) 80%, white 20%),
+      var(--color-primary)
+    );
+    color: var(--color-primary-foreground);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    box-shadow:
+      0 5px 0 0 color-mix(in oklch, var(--color-primary) 60%, black 22%),
+      0 10px 18px -8px color-mix(in oklch, var(--color-primary) 60%, transparent);
   }
 }

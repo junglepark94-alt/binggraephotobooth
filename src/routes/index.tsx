@@ -34,10 +34,10 @@ export const Route = createFileRoute("/")({
 });
 
 const FRAMES: Record<FrameKey, { name: string; subtitle: string; frame: string; overlay: string; overlays: string[]; tint: string }> = {
-  white: { name: "White", subtitle: "두 왕국이 함께 나누게 된 부드럽고 포근한 아이스크림 세계에서 영감을 받은 프레임이에요.", frame: frameWhite, overlay: overlayWhite, overlays: [overlayWhite, overlayWhite, overlayWhite, overlayWhite], tint: "from-slate-100 to-white" },
-  brown: { name: "Brown", subtitle: "두 왕국을 가로질러 모인 클래식한 디저트와 과자의 풍미에서 영감을 받은 진하고 따뜻한 프레임이에요.", frame: frameBrown, overlay: overlayBrown, overlays: [overlayBrown, overlayBrown, overlayBrown, overlayBrown], tint: "from-amber-200 to-stone-300" },
-  skyblue: { name: "Skyblue", subtitle: "더 넓어진 왕국에서 함께 즐기는 시원한 아이스크림의 순간에서 영감을 받은 산뜻한 프레임이에요.", frame: frameSkyblue, overlay: overlaySkyblue, overlays: [overlaySkyblue, overlaySkyblue, overlaySkyblue, overlaySkyblue], tint: "from-sky-200 to-blue-100" },
-  binggraeus: { name: "Binggraeus", subtitle: "아이스크림 왕국의 중심에서 두 왕국의 특별한 만남을 기념하는 왕실 프레임이에요.", frame: frameBinggraeus, overlay: overlayBinggraeus, overlays: [overlayBinggraeusSlot1, overlayBinggraeusSlot2, overlayBinggraeusSlot3, overlayBinggraeusSlot4], tint: "from-rose-300 to-amber-200" },
+  white: { name: "White", subtitle: "두 왕국이 함께 나누게 된 부드럽고 포근한 아이스크림 프레임", frame: frameWhite, overlay: overlayWhite, overlays: [overlayWhite, overlayWhite, overlayWhite, overlayWhite], tint: "from-slate-100 to-white" },
+  brown: { name: "Brown", subtitle: "두 왕국을 가로질러 모인 클래식한 디저트와 진하고 따뜻한 과자의 풍미를 담은 프레임", frame: frameBrown, overlay: overlayBrown, overlays: [overlayBrown, overlayBrown, overlayBrown, overlayBrown], tint: "from-amber-200 to-stone-300" },
+  skyblue: { name: "Skyblue", subtitle: "더 넓어진 왕국에서 함께 즐기는 시원한 아이스크림의 산뜻함이 묻어나는 프레임", frame: frameSkyblue, overlay: overlaySkyblue, overlays: [overlaySkyblue, overlaySkyblue, overlaySkyblue, overlaySkyblue], tint: "from-sky-200 to-blue-100" },
+  binggraeus: { name: "Binggraeus", subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임", frame: frameBinggraeus, overlay: overlayBinggraeus, overlays: [overlayBinggraeusSlot1, overlayBinggraeusSlot2, overlayBinggraeusSlot3, overlayBinggraeusSlot4], tint: "from-rose-300 to-amber-200" },
 };
 
 type Step = "prologue1" | "prologue2" | "select" | "shoot" | "result";
@@ -111,8 +111,9 @@ function App() {
   const [shots, setShots] = useState<string[]>([]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-foreground">
       <div className="mx-auto w-full max-w-md px-5 pb-10 pt-8 md:max-w-3xl lg:max-w-6xl md:px-8 md:pt-12">
+        {step !== "prologue1" && step !== "prologue2" && <FestivalHeader />}
         {step === "prologue1" && (
           <PrologueScreen
             image={prologue1}
@@ -160,6 +161,15 @@ function App() {
   );
 }
 
+function FestivalHeader() {
+  return (
+    <div className="mb-6 flex flex-col items-center text-center">
+      <div className="ribbon-title text-lg md:text-xl">🍦 빙그레 네컷 🍦</div>
+      <p className="mt-2 font-hand text-base text-muted-foreground">빙그레 왕국 여름 축제</p>
+    </div>
+  );
+}
+
 function PrivacyNote() {
   return (
     <p className="mt-6 text-center text-xs text-muted-foreground">
@@ -177,7 +187,7 @@ function PrologueScreen({
         <div className="flex items-center">
           <button
             onClick={onBack}
-            className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground"
+            className="rounded-full bg-secondary px-4 py-1.5 text-sm font-bold text-secondary-foreground shadow-sm ring-1 ring-border transition active:scale-95"
           >
             ← 뒤로
           </button>
@@ -201,10 +211,7 @@ function PrologueScreen({
         </div>
       </div>
       {ctaLabel && (
-        <button
-          onClick={onNext}
-          className="mx-auto mt-6 w-full max-w-sm rounded-2xl bg-primary px-6 py-4 text-lg font-bold text-primary-foreground shadow-lg shadow-primary/25 transition active:scale-[0.98]"
-        >
+        <button onClick={onNext} className="candy-btn mx-auto mt-6 w-full max-w-sm px-6 py-4 text-lg">
           {ctaLabel}
         </button>
       )}
@@ -227,16 +234,16 @@ function SelectScreen({
             <button
               key={k}
               onClick={() => onChange(k)}
-              className={`flex items-center gap-4 rounded-2xl border-2 bg-card p-3 text-left transition md:flex-col md:items-stretch md:p-4 ${active ? "border-primary shadow-lg shadow-primary/20" : "border-border"}`}
+              className={`festival-card relative flex items-center gap-4 p-3 text-left transition sm:flex-col sm:items-stretch sm:p-4 ${active ? "scale-[1.01] !border-primary shadow-lg shadow-primary/25" : ""}`}
             >
-              <div className="relative flex h-40 w-28 items-center justify-center overflow-hidden rounded-lg bg-secondary/40 p-1 ring-1 ring-border md:h-80 md:w-full">
+              <div className="relative flex h-40 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary/40 p-1 ring-1 ring-border sm:h-72 sm:w-full">
                 <img src={previews[k] ?? f.frame} alt={f.name} className="h-full w-full object-contain" />
               </div>
-              <div className="flex-1 md:mt-3">
+              <div className="flex-1 sm:mt-3">
                 <div className="text-lg font-bold">{f.name}</div>
-                <div className="text-sm text-muted-foreground">{f.subtitle}</div>
+                <div className="mt-1 text-sm leading-snug text-muted-foreground">{f.subtitle}</div>
               </div>
-              <div className={`grid h-6 w-6 place-items-center rounded-full border-2 md:absolute md:right-3 md:top-3 ${active ? "border-primary bg-primary" : "border-border"}`}>
+              <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 sm:absolute sm:right-3 sm:top-3 ${active ? "border-primary bg-primary" : "border-border"}`}>
                 {active && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
               </div>
             </button>
@@ -246,7 +253,7 @@ function SelectScreen({
       <button
         disabled={!value}
         onClick={onNext}
-        className="mt-8 w-full rounded-2xl bg-primary px-6 py-4 text-lg font-bold text-primary-foreground shadow-lg shadow-primary/25 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none md:mx-auto md:max-w-md"
+        className="candy-btn mt-8 w-full px-6 py-4 text-lg disabled:cursor-not-allowed md:mx-auto md:max-w-md"
       >
         촬영 시작
       </button>
@@ -259,11 +266,14 @@ function Header({ title, onBack }: { title: string; onBack?: () => void }) {
   return (
     <div className="flex items-center gap-3">
       {onBack && (
-        <button onClick={onBack} className="rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground">
+        <button
+          onClick={onBack}
+          className="rounded-full bg-secondary px-4 py-1.5 text-sm font-bold text-secondary-foreground shadow-sm ring-1 ring-border transition active:scale-95"
+        >
           ← 뒤로
         </button>
       )}
-      <h2 className="text-xl font-bold">{title}</h2>
+      <h2 className="text-2xl font-bold text-primary">{title}</h2>
     </div>
   );
 }
@@ -275,7 +285,6 @@ function ShootScreen({
   const overlayImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [readyState, setReadyState] = useState(0);
   const [shots, setShots] = useState<string[]>([]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -324,7 +333,6 @@ function ShootScreen({
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
           setReady(true);
-          setReadyState(videoRef.current.readyState);
         }
       } catch (e) {
         console.error(e);
@@ -408,7 +416,6 @@ function ShootScreen({
           autoPlay
           playsInline
           muted
-          onLoadedMetadata={(e) => setReadyState((e.target as HTMLVideoElement).readyState)}
           className="absolute inset-0 h-full w-full object-cover"
           style={{ transform: "scaleX(-1)", zIndex: 0 }}
         />
@@ -431,12 +438,6 @@ function ShootScreen({
       </div>
 
       <div className="space-y-4">
-      <div className="rounded-md bg-secondary/60 p-2 text-xs text-muted-foreground ring-1 ring-border">
-        <div>카메라 스트림 활성: {ready ? "예" : "아니오"}</div>
-        <div>비디오 readyState: {readyState}</div>
-        <div>선택된 오버레이: {f.overlay.split("/").pop()}</div>
-      </div>
-
       <div className="grid grid-cols-4 gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="relative aspect-square overflow-hidden rounded-lg bg-secondary ring-1 ring-border">
@@ -450,11 +451,7 @@ function ShootScreen({
         ))}
       </div>
 
-      <button
-        onClick={startShooting}
-        disabled={!ready || busy}
-        className="w-full rounded-2xl bg-primary px-6 py-4 text-lg font-bold text-primary-foreground shadow-lg shadow-primary/25 transition active:scale-[0.98] disabled:opacity-50"
-      >
+      <button onClick={startShooting} disabled={!ready || busy} className="candy-btn w-full px-6 py-4 text-lg">
         {busy ? "촬영 중…" : ready ? "📸 4컷 촬영하기" : "카메라 불러오는 중…"}
       </button>
       <PrivacyNote />
@@ -539,7 +536,7 @@ function ResultScreen({
         </div>
       )}
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-      <div className="grid place-items-center rounded-3xl bg-secondary p-4 ring-1 ring-border" style={{ minHeight: 400 }}>
+      <div className="festival-card grid place-items-center p-4" style={{ minHeight: 400 }}>
         {stripUrl ? (
           <img src={stripUrl} alt="나의 네컷 결과" className="max-h-[70vh] w-auto rounded-xl shadow-md" />
         ) : (
@@ -552,10 +549,10 @@ function ResultScreen({
       <div className="space-y-4">
       {shareMsg && <p className="text-center text-xs text-muted-foreground">{shareMsg}</p>}
       <div className="grid grid-cols-2 gap-3">
-        <button onClick={onRetake} className="rounded-2xl bg-secondary px-4 py-3 font-semibold text-secondary-foreground">다시 찍기</button>
-        <button onClick={onChangeFrame} className="rounded-2xl bg-secondary px-4 py-3 font-semibold text-secondary-foreground">프레임 변경</button>
-        <button onClick={save} disabled={!stripUrl} className="rounded-2xl bg-primary px-4 py-3 font-bold text-primary-foreground disabled:opacity-50">저장</button>
-        <button onClick={share} disabled={!stripUrl} className="rounded-2xl bg-accent px-4 py-3 font-bold text-accent-foreground disabled:opacity-50">공유</button>
+        <button onClick={onRetake} className="candy-btn-mint candy-btn px-4 py-3">다시 찍기</button>
+        <button onClick={onChangeFrame} className="candy-btn-mint candy-btn px-4 py-3">프레임 변경</button>
+        <button onClick={save} disabled={!stripUrl} className="candy-btn px-4 py-3">💾 저장</button>
+        <button onClick={share} disabled={!stripUrl} className="candy-btn-sky candy-btn px-4 py-3">🔗 공유</button>
       </div>
       <PrivacyNote />
       </div>

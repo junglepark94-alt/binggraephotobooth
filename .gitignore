@@ -1,3 +1,7 @@
+# 스토리보드 작업 부산물 (로컬 참고용, 커밋 제외)
+_storyboard.*
+_sb_slides/
+
 # Logs
 logs
 *.log
