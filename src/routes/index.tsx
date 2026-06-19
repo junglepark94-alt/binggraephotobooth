@@ -291,52 +291,47 @@ function ShootScreen({
   frameKey, onBack, onDone,
 }: { frameKey: FrameKey; onBack: () => void; onDone: (shots: string[]) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const overlayImgRef = useRef<HTMLImageElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [shots, setShots] = useState<string[]>([]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
-  const [frameSize, setFrameSize] = useState<{ w: number; h: number } | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
-  const [frameOverlayUrl, setFrameOverlayUrl] = useState<string | null>(null);
   const f = FRAMES[frameKey];
 
+  // 프레임/슬롯 준비 — 권한 불필요, 마운트 시 미리 계산.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        overlayImgRef.current = await loadImage(f.overlay);
-        const frameImg = await loadImage(f.frame);
-        if (cancelled) return;
-        const W = frameImg.naturalWidth;
-        const H = frameImg.naturalHeight;
-        let detected = detectGreenSlots(frameImg);
-        if (detected.length < 4) detected = fallbackSlots(frameImg);
-        setFrameSize({ w: W, h: H });
-        setSlots(detected);
-        // Build frame with green placeholders made transparent
-        const fc = document.createElement("canvas");
-        fc.width = W; fc.height = H;
-        const fctx = fc.getContext("2d")!;
-        fctx.drawImage(frameImg, 0, 0);
-        const id = fctx.getImageData(0, 0, W, H);
-        const d = id.data;
-        for (let i = 0; i < d.length; i += 4) {
-          const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
-          if (a > 128 && g > 180 && r < 120 && b < 120 && g > r + 80 && g > b + 80) {
-            d[i + 3] = 0;
-          }
-        }
-        fctx.putImageData(id, 0, 0);
-        setFrameOverlayUrl(fc.toDataURL("image/png"));
+      const frameImg = await loadImage(f.frame);
+      if (cancelled) return;
+      let detected = detectGreenSlots(frameImg);
+      if (detected.length < 4) detected = fallbackSlots(frameImg);
+      setSlots(detected);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [f.frame]);
 
+  // 카메라 요청 — 사용자가 "허용하고 시작"을 누른 뒤(started)에만 실행.
+  // 사용자 제스처 이후 권한을 요청해야 브라우저 프롬프트가 안정적으로 뜬다.
+  useEffect(() => {
+    if (!started) return;
+    let cancelled = false;
+    (async () => {
+      try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -345,14 +340,21 @@ function ShootScreen({
         }
       } catch (e) {
         console.error(e);
-        setError("네컷 촬영을 위해 카메라 권한이 필요합니다. 카메라 접근을 허용한 뒤 다시 시도해주세요.");
+        setError("카메라 접근이 허용되지 않았어요. 권한을 허용한 뒤 다시 시도해주세요.");
       }
     })();
     return () => {
       cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     };
-  }, [f.overlay, f.frame]);
+  }, [started, attempt]);
+
+  const retry = () => {
+    setError(null);
+    setReady(false);
+    setAttempt((a) => a + 1);
+  };
 
   const capture = (): string => {
     const v = videoRef.current;
@@ -394,12 +396,41 @@ function ShootScreen({
     onDone(collected);
   };
 
+  // 카메라 권한 안내 화면 (스토리보드 E-SCREEN) — 촬영 전 권한 요청 가이드.
+  if (!started) {
+    return (
+      <div>
+        <Header title="카메라 준비" onBack={onBack} />
+        <div className="festival-card mx-auto mt-6 max-w-md p-7 text-center">
+          <div className="text-6xl">📸</div>
+          <h3 className="mt-4 text-xl font-bold text-primary">카메라를 켤게요</h3>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            네컷 촬영을 위해 카메라 접근 권한이 필요해요.
+            <br />
+            아래 버튼을 누르고 브라우저에서 <b className="text-foreground">“허용”</b>을 선택해주세요.
+          </p>
+          <button onClick={() => setStarted(true)} className="candy-btn mt-7 w-full px-6 py-4 text-lg">
+            허용하고 시작하기
+          </button>
+          <PrivacyNote />
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div>
         <Header title="카메라" onBack={onBack} />
-        <div className="mt-6 rounded-2xl bg-card p-6 ring-1 ring-border">
-          <p className="text-sm">{error}</p>
+        <div className="festival-card mx-auto mt-6 max-w-md p-7 text-center">
+          <div className="text-6xl">😢</div>
+          <p className="mt-4 text-sm leading-relaxed">{error}</p>
+          <button onClick={retry} className="candy-btn mt-5 w-full px-6 py-3">
+            다시 시도
+          </button>
+          <p className="mt-3 text-xs text-muted-foreground">
+            계속 안 되면 주소창의 카메라 아이콘에서 권한을 “허용”으로 바꿔주세요.
+          </p>
         </div>
       </div>
     );
@@ -435,6 +466,14 @@ function ShootScreen({
           className="pointer-events-none absolute inset-0"
           style={{ width: "100%", height: "100%", zIndex: 1 }}
         />
+        {!ready && (
+          <div className="absolute inset-0 grid place-items-center bg-black/20" style={{ zIndex: 2 }}>
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-9 w-9 animate-spin rounded-full border-4 border-white border-t-transparent" />
+              <p className="text-sm font-bold text-white drop-shadow">카메라 불러오는 중…</p>
+            </div>
+          </div>
+        )}
         {countdown !== null && (
           <div className="absolute inset-0 grid place-items-center bg-black/30" style={{ zIndex: 3 }}>
             <div className="text-9xl font-extrabold text-white drop-shadow-lg">{countdown}</div>
