@@ -25,6 +25,7 @@ import overlayBinggraeusSlot3 from "@/assets/overlay_binggraeus_slot3.png";
 import overlayBinggraeusSlot4 from "@/assets/overlay_binggraeus_slot4.png";
 import mainBg from "@/assets/main_bg.png";
 import logo from "@/assets/logo_trim.png";
+import btnImg from "@/assets/button_trim.png";
 import {
   type FrameKey,
   type Slot,
@@ -439,10 +440,16 @@ function MainScreen({ onStart }: { onStart: () => void }) {
           </div>
         </div>
 
-        {/* 게임 시작 버튼 */}
-        <div className="absolute inset-x-0 bottom-8 flex justify-center px-8">
-          <button onClick={onStart} className="candy-btn w-full max-w-xs px-6 py-4 text-xl">
-            게임 시작
+        {/* 게임 시작 버튼 (button_trim.png — 핑크 알약 + 우측 아이스크림, 글자는 오버레이) */}
+        <div className="absolute inset-x-0 bottom-7 flex justify-center px-6">
+          <button onClick={onStart} className="relative block w-full max-w-[330px] transition active:scale-95">
+            <img src={btnImg} alt="" draggable={false} className="w-full select-none" />
+            <span
+              className="absolute inset-0 flex items-center justify-center pr-[15%] font-display text-2xl font-extrabold text-white"
+              style={{ textShadow: "0 2px 5px rgba(196,74,120,0.6), 0 1px 0 #e07ba6" }}
+            >
+              게임 시작
+            </span>
           </button>
         </div>
       </div>
