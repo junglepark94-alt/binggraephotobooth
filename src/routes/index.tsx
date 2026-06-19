@@ -411,8 +411,8 @@ function MainScreen({ onStart }: { onStart: () => void }) {
         <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
 
         {/* 타이틀 로고 오버레이 (logo.png — 투명 배경) + 리본 곡선에 부제 */}
-        <div className="absolute inset-x-0 top-2 flex justify-center px-1">
-          <div className="relative w-full max-w-[440px]">
+        <div className="absolute inset-x-0 top-[12%] flex justify-center">
+          <div className="relative w-[152%] max-w-none">
             <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
             {/* 부제를 리본 아치 곡선(픽셀 측정: 가운데 위로 살짝 휨)에 태운다 */}
             <svg
