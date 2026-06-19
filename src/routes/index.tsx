@@ -411,10 +411,11 @@ function MainScreen({ onStart }: { onStart: () => void }) {
         <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
 
         {/* 타이틀 로고 오버레이 (logo.png — 투명 배경) + 리본에 부제 */}
-        <div className="absolute inset-x-0 top-5 flex justify-center px-4">
-          <div className="relative w-[82%] max-w-[300px]">
+        <div className="absolute inset-x-0 top-3 flex justify-center px-3">
+          <div className="relative w-[96%] max-w-[380px]">
             <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
-            <p className="absolute left-1/2 top-[70%] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-hand text-[10px] font-bold text-[#b14a72]">
+            {/* 리본 띠 중심 ≈ 이미지 높이의 58% (픽셀 측정) */}
+            <p className="absolute left-1/2 top-[58%] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-hand text-xs font-bold text-[#b14a72]">
               오늘도 맛있는 즐거움이 가득한 곳
             </p>
           </div>
