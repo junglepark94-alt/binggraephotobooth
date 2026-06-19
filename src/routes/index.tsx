@@ -23,6 +23,7 @@ import overlayBinggraeusSlot1 from "@/assets/overlay_binggraeus_slot1.png";
 import overlayBinggraeusSlot2 from "@/assets/overlay_binggraeus_slot2.png";
 import overlayBinggraeusSlot3 from "@/assets/overlay_binggraeus_slot3.png";
 import overlayBinggraeusSlot4 from "@/assets/overlay_binggraeus_slot4.png";
+import mainBg from "@/assets/main_bg.png";
 import {
   type FrameKey,
   type Slot,
@@ -405,31 +406,15 @@ function MapSpot({
 function MainScreen({ onStart }: { onStart: () => void }) {
   return (
     <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
-      <div
-        className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border"
-        style={{ background: "linear-gradient(180deg,#ffd9ec 0%,#cfe6ff 42%,#e7f7dd 80%,#c4ecca 100%)" }}
-      >
-        {/* === 배경 일러스트 placeholder (main_bg.png 제공 시 <img>로 교체) === */}
-        <div className="pointer-events-none absolute inset-0 select-none">
-          <span className="absolute left-[10%] top-[11%] text-4xl">🎈</span>
-          <span className="absolute right-[9%] top-[14%] text-3xl">🚁</span>
-          <span className="absolute left-[28%] top-[24%] text-base">✨</span>
-          <span className="absolute right-[26%] top-[9%] text-base">⭐</span>
-          <span className="absolute left-[58%] top-[20%] text-3xl opacity-90">☁️</span>
-          <span className="absolute left-[12%] top-[30%] text-3xl opacity-90">☁️</span>
-          {/* 타이틀 (실제 이미지에는 배너로 포함됨) */}
-          <div className="absolute inset-x-0 top-[16%] flex flex-col items-center">
-            <div className="ribbon-title text-2xl">👑 빙그레 왕국 👑</div>
-            <p className="mt-2 font-hand text-sm text-foreground/70">오늘도 맛있는 즐거움이 가득한 곳</p>
-          </div>
-          {/* 성 */}
-          <div className="absolute inset-x-0 top-[42%] text-center text-8xl">🏰</div>
-          {/* 캐릭터 */}
-          <div className="absolute inset-x-0 bottom-[20%] flex items-end justify-center gap-2 text-5xl">
-            <span>🍌</span>
-            <span className="text-6xl">🍦</span>
-            <span>🍨</span>
-          </div>
+      <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
+        <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
+
+        {/* 타이틀 오버레이 (이미지에는 글자가 없으므로 앱에서 얹는다) */}
+        <div className="absolute inset-x-0 top-6 flex flex-col items-center px-4">
+          <div className="ribbon-title text-2xl">👑 빙그레 왕국 👑</div>
+          <p className="mt-2 rounded-full bg-white/70 px-3 py-0.5 font-hand text-xs text-foreground shadow-sm">
+            오늘도 맛있는 즐거움이 가득한 곳
+          </p>
         </div>
 
         {/* 게임 시작 버튼 */}
