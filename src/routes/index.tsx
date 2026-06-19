@@ -24,6 +24,7 @@ import overlayBinggraeusSlot2 from "@/assets/overlay_binggraeus_slot2.png";
 import overlayBinggraeusSlot3 from "@/assets/overlay_binggraeus_slot3.png";
 import overlayBinggraeusSlot4 from "@/assets/overlay_binggraeus_slot4.png";
 import mainBg from "@/assets/main_bg.png";
+import logo from "@/assets/logo.png";
 import {
   type FrameKey,
   type Slot,
@@ -409,16 +410,14 @@ function MainScreen({ onStart }: { onStart: () => void }) {
       <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
         <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
 
-        {/* 타이틀 오버레이 (이미지에는 글자가 없으므로 앱에서 얹는다) */}
-        <div className="absolute inset-x-0 top-7 flex flex-col items-center px-4">
-          <h1 className="flex items-center gap-2 text-4xl">
-            <span className="text-3xl">👑</span>
-            <span className="main-title">빙그레 왕국</span>
-            <span className="text-3xl">👑</span>
-          </h1>
-          <p className="mt-3 rounded-full bg-white/75 px-4 py-1 font-hand text-sm font-bold text-foreground shadow-sm">
-            오늘도 맛있는 즐거움이 가득한 곳
-          </p>
+        {/* 타이틀 로고 오버레이 (logo.png — 투명 배경) + 리본에 부제 */}
+        <div className="absolute inset-x-0 top-5 flex justify-center px-4">
+          <div className="relative w-[82%] max-w-[300px]">
+            <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
+            <p className="absolute left-1/2 top-[70%] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-hand text-[10px] font-bold text-[#b14a72]">
+              오늘도 맛있는 즐거움이 가득한 곳
+            </p>
+          </div>
         </div>
 
         {/* 게임 시작 버튼 */}
