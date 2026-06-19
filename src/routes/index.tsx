@@ -26,6 +26,7 @@ import overlayBinggraeusSlot4 from "@/assets/overlay_binggraeus_slot4.png";
 import mainBg from "@/assets/main_bg.png";
 import logo from "@/assets/logo_trim.png";
 import btnImg from "@/assets/button_trim.png";
+import windowImg from "@/assets/window_trim.png";
 import {
   type FrameKey,
   type Slot,
@@ -202,6 +203,29 @@ function PrivacyNote() {
   );
 }
 
+// 공통 이미지 버튼 (button_trim.png — 핑크 알약 + 우측 아이스크림). 글자는 오버레이.
+function ImageButton({
+  onClick,
+  label,
+  textClassName = "text-2xl",
+}: {
+  onClick: () => void;
+  label: string;
+  textClassName?: string;
+}) {
+  return (
+    <button onClick={onClick} className="relative block w-full max-w-[330px] transition active:scale-95">
+      <img src={btnImg} alt="" draggable={false} className="w-full select-none" />
+      <span
+        className={`absolute inset-0 flex items-center justify-center font-display font-extrabold text-white ${textClassName}`}
+        style={{ textShadow: "0 2px 5px rgba(196,74,120,0.6), 0 1px 0 #e07ba6" }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
 // 빙그레 축제로 이동 중 로딩 (스토리보드 B-SCREEN)
 function FestivalLoading({ text }: { text: string }) {
   return (
@@ -235,35 +259,29 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
             <p className="mt-3 font-hand text-lg font-bold text-white drop-shadow">빙그레 축제로 이동 중…</p>
           </div>
         ) : (
-          <>
-            <button
-              onClick={onBack}
-              className="absolute left-3 top-3 z-10 rounded-full bg-white/80 px-3 py-1.5 text-sm font-bold text-foreground shadow ring-1 ring-border active:scale-95"
-            >
-              ← 뒤로
-            </button>
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-5">
-              {/* 편지 창 (window 에셋 들어올 자리 — 현재는 카드 placeholder) */}
-              <div className="festival-card w-full max-w-sm bg-white/90 p-6 backdrop-blur-sm">
-                <div className="flex items-center justify-between">
-                  <span className="font-hand text-xl text-primary">From. 빙그레…</span>
-                  <span className="text-2xl">💌</span>
-                </div>
-                <div className="my-4 border-t border-dashed border-border" />
-                <div className="space-y-4 text-[15px] leading-relaxed text-foreground">
-                  <p>두 왕국이 만나 하나의 아이스크림 왕국이 되었습니다! 🍦👑</p>
-                  <p>오늘부터 마을 광장에서 여름 축제가 시작됩니다.</p>
-                  <p>축제 속 숨겨진 이벤트와 추억을 함께 남겨보세요. ✨</p>
-                </div>
-              </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4">
+            {/* 편지 창 (window_trim.png) + 텍스트 오버레이 */}
+            <div className="relative w-full max-w-[330px]">
+              <img src={windowImg} alt="" draggable={false} className="w-full select-none" />
+              {/* X 닫기 → 뒤로(메인) */}
               <button
-                onClick={() => setLeaving(true)}
-                className="candy-btn mt-5 w-full max-w-sm px-6 py-4 text-lg"
-              >
-                축제 즐기러 가기 🎪
-              </button>
+                onClick={onBack}
+                aria-label="닫기"
+                className="absolute right-[4%] top-[1%] h-[9%] w-[13%]"
+              />
+              {/* From 헤더 (구분선 위) */}
+              <span className="absolute left-[12%] top-[8.5%] font-hand text-lg font-bold text-primary">
+                From. 빙그레…
+              </span>
+              {/* 본문 (구분선 아래) */}
+              <div className="absolute inset-x-[12%] top-[25%] space-y-3 text-[13px] font-medium leading-relaxed text-foreground/90">
+                <p>두 왕국이 만나 하나의 아이스크림 왕국이 되었습니다! 🍦👑</p>
+                <p>오늘부터 마을 광장에서 여름 축제가 시작됩니다.</p>
+                <p>축제 속 숨겨진 이벤트와 추억을 함께 남겨보세요. ✨</p>
+              </div>
             </div>
-          </>
+            <ImageButton onClick={() => setLeaving(true)} label="축제 즐기러 가기" textClassName="text-xl" />
+          </div>
         )}
       </div>
     </div>
@@ -464,17 +482,9 @@ function MainScreen({ onStart }: { onStart: () => void }) {
           </div>
         </div>
 
-        {/* 게임 시작 버튼 (button_trim.png — 핑크 알약 + 우측 아이스크림, 글자는 오버레이) */}
+        {/* 게임 시작 버튼 */}
         <div className="absolute inset-x-0 bottom-7 flex justify-center px-6">
-          <button onClick={onStart} className="relative block w-full max-w-[330px] transition active:scale-95">
-            <img src={btnImg} alt="" draggable={false} className="w-full select-none" />
-            <span
-              className="absolute inset-0 flex items-center justify-center font-display text-2xl font-extrabold text-white"
-              style={{ textShadow: "0 2px 5px rgba(196,74,120,0.6), 0 1px 0 #e07ba6" }}
-            >
-              게임 시작
-            </span>
-          </button>
+          <ImageButton onClick={onStart} label="게임 시작" textClassName="text-2xl" />
         </div>
       </div>
     </div>
