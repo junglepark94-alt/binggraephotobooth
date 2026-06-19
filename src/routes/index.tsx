@@ -23,8 +23,6 @@ import overlayBinggraeusSlot1 from "@/assets/overlay_binggraeus_slot1.png";
 import overlayBinggraeusSlot2 from "@/assets/overlay_binggraeus_slot2.png";
 import overlayBinggraeusSlot3 from "@/assets/overlay_binggraeus_slot3.png";
 import overlayBinggraeusSlot4 from "@/assets/overlay_binggraeus_slot4.png";
-import prologue1 from "@/assets/prologue_1.png";
-import prologue2 from "@/assets/prologue_2.png";
 import {
   type FrameKey,
   type Slot,
@@ -51,7 +49,7 @@ const FRAMES: Record<FrameKey, { name: string; subtitle: string; frame: string; 
   binggraeus: { name: "Binggraeus", subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임", frame: frameBinggraeus, overlay: overlayBinggraeus, overlays: [overlayBinggraeusSlot1, overlayBinggraeusSlot2, overlayBinggraeusSlot3, overlayBinggraeusSlot4], tint: "from-rose-300 to-amber-200" },
 };
 
-type Step = "prologue1" | "prologue2" | "letter" | "map" | "select" | "shoot" | "result" | "draw" | "end";
+type Step = "main" | "letter" | "map" | "select" | "shoot" | "result" | "draw" | "end";
 
 type Inventory = { photo: boolean; candy: boolean; heart: boolean; clover: boolean };
 const EMPTY_INVENTORY: Inventory = { photo: false, candy: false, heart: false, clover: false };
@@ -120,7 +118,7 @@ function useFramePreviews() {
 }
 
 function App() {
-  const [step, setStep] = useState<Step>("prologue1");
+  const [step, setStep] = useState<Step>("main");
   const [frameKey, setFrameKey] = useState<FrameKey | null>(null);
   const [shots, setShots] = useState<string[]>([]);
   const [inv, setInv] = useState<Inventory>(EMPTY_INVENTORY);
@@ -129,34 +127,16 @@ function App() {
     setShots([]);
     setFrameKey(null);
     setInv(EMPTY_INVENTORY);
-    setStep("prologue1");
+    setStep("main");
   };
 
   return (
     <div className="min-h-screen text-foreground">
       <div className="mx-auto w-full max-w-md px-5 pb-10 pt-8 md:max-w-3xl lg:max-w-6xl md:px-8 md:pt-12">
-        {step !== "prologue1" && step !== "prologue2" && <FestivalHeader />}
-        {step === "prologue1" && (
-          <PrologueScreen
-            image={prologue1}
-            alt="프롤로그 1"
-            onNext={() => setStep("prologue2")}
-            overlayButton
-            hotspotStyle={{ left: "31.11%", top: "55.94%", width: "38.43%", height: "3.75%" }}
-          />
-        )}
-        {step === "prologue2" && (
-          <PrologueScreen
-            image={prologue2}
-            alt="프롤로그 2"
-            onBack={() => setStep("prologue1")}
-            onNext={() => setStep("letter")}
-            overlayButton
-            hotspotStyle={{ left: "31.11%", top: "52.40%", width: "38.43%", height: "3.75%" }}
-          />
-        )}
+        {step !== "main" && <FestivalHeader />}
+        {step === "main" && <MainScreen onStart={() => setStep("letter")} />}
         {step === "letter" && (
-          <LetterScreen onBack={() => setStep("prologue2")} onNext={() => setStep("map")} />
+          <LetterScreen onBack={() => setStep("main")} onNext={() => setStep("map")} />
         )}
         {step === "map" && (
           <FestivalMap
@@ -417,43 +397,48 @@ function MapSpot({
   );
 }
 
-function PrologueScreen({
-  image, alt, onBack, onNext, ctaLabel, overlayButton, hotspotStyle,
-}: { image: string; alt: string; onBack?: () => void; onNext: () => void; ctaLabel?: string; overlayButton?: boolean; hotspotStyle?: CSSProperties }) {
+// 메인 화면 (스토리보드 02 MAIN SCREEN) — 배경 일러스트(빙그레 왕국) + 게임 시작 버튼.
+// 배경 에셋 교체 방법: src/assets/main_bg.png 를 추가하고 import 한 뒤,
+//   아래 "배경 일러스트 placeholder" 블록을
+//   <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
+//   한 줄로 바꾸면 된다. (타이틀·캐릭터는 이미지에 포함되어 있으므로 버튼만 오버레이)
+function MainScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="mx-auto flex min-h-[88vh] max-w-2xl flex-col">
-      {onBack && (
-        <div className="flex items-center">
-          <button
-            onClick={onBack}
-            className="rounded-full bg-secondary px-4 py-1.5 text-sm font-bold text-secondary-foreground shadow-sm ring-1 ring-border transition active:scale-95"
-          >
-            ← 뒤로
+    <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
+      <div
+        className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border"
+        style={{ background: "linear-gradient(180deg,#ffd9ec 0%,#cfe6ff 42%,#e7f7dd 80%,#c4ecca 100%)" }}
+      >
+        {/* === 배경 일러스트 placeholder (main_bg.png 제공 시 <img>로 교체) === */}
+        <div className="pointer-events-none absolute inset-0 select-none">
+          <span className="absolute left-[10%] top-[11%] text-4xl">🎈</span>
+          <span className="absolute right-[9%] top-[14%] text-3xl">🚁</span>
+          <span className="absolute left-[28%] top-[24%] text-base">✨</span>
+          <span className="absolute right-[26%] top-[9%] text-base">⭐</span>
+          <span className="absolute left-[58%] top-[20%] text-3xl opacity-90">☁️</span>
+          <span className="absolute left-[12%] top-[30%] text-3xl opacity-90">☁️</span>
+          {/* 타이틀 (실제 이미지에는 배너로 포함됨) */}
+          <div className="absolute inset-x-0 top-[16%] flex flex-col items-center">
+            <div className="ribbon-title text-2xl">👑 빙그레 왕국 👑</div>
+            <p className="mt-2 font-hand text-sm text-foreground/70">오늘도 맛있는 즐거움이 가득한 곳</p>
+          </div>
+          {/* 성 */}
+          <div className="absolute inset-x-0 top-[42%] text-center text-8xl">🏰</div>
+          {/* 캐릭터 */}
+          <div className="absolute inset-x-0 bottom-[20%] flex items-end justify-center gap-2 text-5xl">
+            <span>🍌</span>
+            <span className="text-6xl">🍦</span>
+            <span>🍨</span>
+          </div>
+        </div>
+
+        {/* 게임 시작 버튼 */}
+        <div className="absolute inset-x-0 bottom-8 flex justify-center px-8">
+          <button onClick={onStart} className="candy-btn w-full max-w-xs px-6 py-4 text-xl">
+            게임 시작
           </button>
         </div>
-      )}
-      <div className="mt-4 flex flex-1 items-center justify-center px-1">
-        <div className="relative inline-block">
-          <img
-            src={image}
-            alt={alt}
-            className="block h-auto max-h-[85vh] w-auto max-w-full rounded-3xl object-contain shadow-sm ring-1 ring-border md:max-h-[90vh]"
-          />
-          {overlayButton && (
-            <button
-              onClick={onNext}
-              aria-label="다음"
-              style={hotspotStyle}
-              className="absolute cursor-pointer rounded-full transition-transform duration-150 hover:scale-[1.04] hover:bg-white/10 active:translate-y-[2px] active:scale-[0.96] active:bg-black/10"
-            />
-          )}
-        </div>
       </div>
-      {ctaLabel && (
-        <button onClick={onNext} className="candy-btn mx-auto mt-6 w-full max-w-sm px-6 py-4 text-lg">
-          {ctaLabel}
-        </button>
-      )}
     </div>
   );
 }
