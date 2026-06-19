@@ -49,7 +49,7 @@ const FRAMES: Record<FrameKey, { name: string; subtitle: string; frame: string; 
   binggraeus: { name: "Binggraeus", subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임", frame: frameBinggraeus, overlay: overlayBinggraeus, overlays: [overlayBinggraeusSlot1, overlayBinggraeusSlot2, overlayBinggraeusSlot3, overlayBinggraeusSlot4], tint: "from-rose-300 to-amber-200" },
 };
 
-type Step = "prologue1" | "prologue2" | "letter" | "select" | "shoot" | "result";
+type Step = "prologue1" | "prologue2" | "letter" | "select" | "shoot" | "result" | "draw";
 
 function useFramePreviews() {
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -166,6 +166,13 @@ function App() {
             shots={shots}
             onRetake={() => { setShots([]); setStep("shoot"); }}
             onChangeFrame={() => { setShots([]); setStep("select"); }}
+            onDraw={() => setStep("draw")}
+          />
+        )}
+        {step === "draw" && (
+          <DrawScreen
+            onBack={() => setStep("result")}
+            onHome={() => { setShots([]); setFrameKey(null); setStep("prologue1"); }}
           />
         )}
       </div>
@@ -944,8 +951,8 @@ function EditToolButton({
 }
 
 function ResultScreen({
-  frameKey, shots, onRetake, onChangeFrame,
-}: { frameKey: FrameKey; shots: string[]; onRetake: () => void; onChangeFrame: () => void }) {
+  frameKey, shots, onRetake, onChangeFrame, onDraw,
+}: { frameKey: FrameKey; shots: string[]; onRetake: () => void; onChangeFrame: () => void; onDraw: () => void }) {
   const [stripUrl, setStripUrl] = useState<string | null>(null);
   const [stripSize, setStripSize] = useState<{ w: number; h: number } | null>(null);
   const [status, setStatus] = useState("네컷을 합성하는 중…");
@@ -1061,7 +1068,156 @@ function ResultScreen({
           <button onClick={save} disabled={!stripUrl} className="candy-btn px-4 py-3">💾 저장</button>
           <button onClick={share} disabled={!stripUrl} className="candy-btn-sky candy-btn px-4 py-3">🔗 공유</button>
         </div>
+        <button onClick={onDraw} className="candy-btn w-full px-6 py-4 text-lg">
+          🍦 오늘의 아이스크림 운세 뽑기
+        </button>
         <PrivacyNote />
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────── 아이스크림 뽑기 (스토리보드 J-SCREEN) ─────────────────────────
+// 스크래치 복권을 긁으면 오늘의 아이스크림 운세(10종)가 공개된다.
+
+type Fortune = { name: string; emoji: string; luck: number; message: string };
+
+const FORTUNES: Fortune[] = [
+  { name: "부라보", emoji: "🍦", luck: 100, message: "오늘 하루 부라브라보 할 일이 가득하겠어요. 당신의 자신감이 멋진 결과를 만들어낼 거예요!" },
+  { name: "팽이팽이", emoji: "🌀", luck: 90, message: "팽팽 돌듯 다양한 기회가 찾아와요! 새로운 시도가 행운의 방향을 바꿔줄 거예요. 두근두근~" },
+  { name: "누가바", emoji: "🍫", luck: 85, message: "고소한 누가처럼 당신의 진심이 누군가의 마음을 녹일 거예요. 용기를 내 먼저 얘기해 보세요. 진심을 알아줄 거예요." },
+  { name: "호두마루", emoji: "🥜", luck: 80, message: "호두처럼 묵묵히 쌓아온 노력의 결실을 맛볼 때예요!" },
+  { name: "투게더", emoji: "🍨", luck: 78, message: "함께라서 더 행복한 하루! 소중한 사람들과의 시간이 큰 행운을 가져다줘요." },
+  { name: "젤루조아", emoji: "🍊", luck: 72, message: "그 동안 안 풀리던 일이 감귤의 깔끔하고 상쾌한 맛처럼 시원한 하루가 되겠어요." },
+  { name: "요맘때", emoji: "🍧", luck: 70, message: "지친 마음에 달콤한 휴식이 필요해요. 가끔은 나를 위한 시간을 가져보세요. 새로운 에너지를 충전하면 더 좋은 일이 생길 거예요!" },
+  { name: "비비빅", emoji: "🍡", luck: 69, message: "막혔던 일이 시원하게 해결되고, 기분 좋은 전환점이 찾아올 거예요." },
+  { name: "바밤바", emoji: "🌰", luck: 60, message: "밤의 부드럽고 포슬함처럼 오늘 하루 조금 느려서 답답할 수도 있지만, 곧 좋은 소식이 기다리고 있겠어요!" },
+  { name: "메로나", emoji: "🍈", luck: 50, message: "주변이 시끄러운 하루일 수 있어요. 오늘은 메론 본연의 맛이 담긴 메로나를 먹으면서 적당한 휴식이 필요한 날이겠어요." },
+];
+
+function DrawScreen({ onBack, onHome }: { onBack: () => void; onHome: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scratchingRef = useRef(false);
+  const [revealed, setRevealed] = useState(false);
+  const fortune = useMemo(() => FORTUNES[Math.floor(Math.random() * FORTUNES.length)], []);
+
+  const W = 600;
+  const H = 360;
+
+  // 스크래치 표면 그리기 (마운트 시)
+  useEffect(() => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext("2d")!;
+    ctx.globalCompositeOperation = "source-over";
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "#ff9ec4");
+    g.addColorStop(0.5, "#cdb4f6");
+    g.addColorStop(1, "#9bd9e8");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    for (let i = 0; i < 50; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 2.5 + 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 40px Jua, system-ui, sans-serif";
+    ctx.fillText("긁어보세요!", W / 2, H / 2 - 16);
+    ctx.font = "bold 21px Jua, system-ui, sans-serif";
+    ctx.fillText("전설의 클로버로 오늘의 운세 확인 ✨", W / 2, H / 2 + 28);
+  }, []);
+
+  const scratchAt = (e: ReactPointerEvent) => {
+    const cv = canvasRef.current!;
+    const r = cv.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * W;
+    const y = ((e.clientY - r.top) / r.height) * H;
+    const ctx = cv.getContext("2d")!;
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(x, y, 28, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  // 50% 이상 긁으면 전체 공개
+  const checkRevealed = () => {
+    const cv = canvasRef.current!;
+    const { data } = cv.getContext("2d")!.getImageData(0, 0, W, H);
+    let cleared = 0;
+    let total = 0;
+    for (let i = 3; i < data.length; i += 4 * 16) {
+      total++;
+      if (data[i] < 128) cleared++;
+    }
+    if (cleared / total > 0.5) setRevealed(true);
+  };
+
+  const onDown = (e: ReactPointerEvent) => {
+    if (revealed) return;
+    scratchingRef.current = true;
+    canvasRef.current!.setPointerCapture(e.pointerId);
+    scratchAt(e);
+  };
+  const onMove = (e: ReactPointerEvent) => {
+    if (!scratchingRef.current) return;
+    scratchAt(e);
+  };
+  const onUp = () => {
+    if (!scratchingRef.current) return;
+    scratchingRef.current = false;
+    checkRevealed();
+  };
+
+  return (
+    <div className="mx-auto max-w-md">
+      <Header title="아이스크림 뽑기" onBack={onBack} />
+      <p className="mt-3 text-center text-sm text-muted-foreground">
+        전설의 클로버로 오늘의 아이스크림 운세를 뽑아보세요!
+      </p>
+      <div
+        className="festival-card relative mt-4 overflow-hidden"
+        style={{ aspectRatio: `${W} / ${H}`, padding: 0 }}
+      >
+        {/* 공개될 운세 (스크래치 아래) */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-6 text-center">
+          <div className="text-7xl">{fortune.emoji}</div>
+          <div className="mt-1 text-2xl font-bold text-primary">{fortune.name}</div>
+          <div className="text-xs font-bold text-muted-foreground">행운지수 {fortune.luck}%</div>
+          <div className="mt-1 h-2.5 w-44 overflow-hidden rounded-full bg-secondary/50 ring-1 ring-border">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${fortune.luck}%` }} />
+          </div>
+        </div>
+        {/* 스크래치 표면 */}
+        <canvas
+          ref={canvasRef}
+          width={W}
+          height={H}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          className={`absolute inset-0 h-full w-full transition-opacity duration-500 ${revealed ? "pointer-events-none opacity-0" : "cursor-pointer opacity-100"}`}
+          style={{ touchAction: "none" }}
+        />
+      </div>
+
+      {revealed && (
+        <div className="festival-card mt-4 p-5 text-center">
+          <p className="text-[15px] leading-relaxed">{fortune.message}</p>
+        </div>
+      )}
+
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <button onClick={onBack} className="candy-btn-mint candy-btn px-4 py-3">
+          ← 내 네컷
+        </button>
+        <button onClick={onHome} className="candy-btn px-4 py-3">
+          🏠 처음으로
+        </button>
       </div>
     </div>
   );
