@@ -412,7 +412,7 @@ function MainScreen({ onStart }: { onStart: () => void }) {
 
         {/* 타이틀 로고 오버레이 (logo.png — 투명 배경) + 리본 곡선에 부제 */}
         <div className="absolute inset-x-0 top-[3%] flex justify-center">
-          <div className="relative w-[112%] max-w-none">
+          <div className="relative w-[95%] max-w-none">
             <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
             {/* 부제를 리본 아치 곡선(트림 이미지 929x538 픽셀 측정)에 태운다 */}
             <svg
@@ -429,7 +429,7 @@ function MainScreen({ onStart }: { onStart: () => void }) {
                 fill="#b14a72"
                 fontWeight={700}
                 fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
-                fontSize={38}
+                fontSize={30}
               >
                 <textPath href="#ribbonPath" startOffset="50%">
                   오늘도 맛있는 즐거움이 가득한 곳
