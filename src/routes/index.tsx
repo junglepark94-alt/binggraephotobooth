@@ -49,7 +49,7 @@ const FRAMES: Record<FrameKey, { name: string; subtitle: string; frame: string; 
   binggraeus: { name: "Binggraeus", subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임", frame: frameBinggraeus, overlay: overlayBinggraeus, overlays: [overlayBinggraeusSlot1, overlayBinggraeusSlot2, overlayBinggraeusSlot3, overlayBinggraeusSlot4], tint: "from-rose-300 to-amber-200" },
 };
 
-type Step = "prologue1" | "prologue2" | "letter" | "select" | "shoot" | "result" | "draw";
+type Step = "prologue1" | "prologue2" | "letter" | "select" | "shoot" | "result" | "draw" | "end";
 
 function useFramePreviews() {
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -170,9 +170,11 @@ function App() {
           />
         )}
         {step === "draw" && (
-          <DrawScreen
-            onBack={() => setStep("result")}
-            onHome={() => { setShots([]); setFrameKey(null); setStep("prologue1"); }}
+          <DrawScreen onBack={() => setStep("result")} onEnd={() => setStep("end")} />
+        )}
+        {step === "end" && (
+          <EndScreen
+            onRestart={() => { setShots([]); setFrameKey(null); setStep("prologue1"); }}
           />
         )}
       </div>
@@ -1095,7 +1097,7 @@ const FORTUNES: Fortune[] = [
   { name: "메로나", emoji: "🍈", luck: 50, message: "주변이 시끄러운 하루일 수 있어요. 오늘은 메론 본연의 맛이 담긴 메로나를 먹으면서 적당한 휴식이 필요한 날이겠어요." },
 ];
 
-function DrawScreen({ onBack, onHome }: { onBack: () => void; onHome: () => void }) {
+function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scratchingRef = useRef(false);
   const [revealed, setRevealed] = useState(false);
@@ -1215,10 +1217,38 @@ function DrawScreen({ onBack, onHome }: { onBack: () => void; onHome: () => void
         <button onClick={onBack} className="candy-btn-mint candy-btn px-4 py-3">
           ← 내 네컷
         </button>
-        <button onClick={onHome} className="candy-btn px-4 py-3">
-          🏠 처음으로
+        <button onClick={onEnd} className="candy-btn px-4 py-3">
+          🌅 축제 마치기
         </button>
       </div>
+    </div>
+  );
+}
+
+// ───────────────────────── 축제 종료 (스토리보드 END SCREEN) ─────────────────────────
+function EndScreen({ onRestart }: { onRestart: () => void }) {
+  return (
+    <div className="mx-auto max-w-md">
+      <div
+        className="festival-card relative overflow-hidden p-8 text-center text-white"
+        style={{ background: "linear-gradient(180deg, #ffb38a 0%, #ff7aa2 48%, #9a6ab0 100%)" }}
+      >
+        <div className="pointer-events-none absolute right-5 top-5 text-2xl opacity-90">⭐</div>
+        <div className="pointer-events-none absolute left-6 top-10 text-lg opacity-80">✨</div>
+        <div className="text-6xl drop-shadow">🌅</div>
+        <h2 className="mt-4 text-2xl font-bold drop-shadow">축제가 저물어요</h2>
+        <p className="mt-3 text-[15px] leading-relaxed drop-shadow">
+          하나의 왕국이 된 빙그레,
+          <br />
+          아이스크림 축제를 모두 즐겼어요.
+          <br />
+          노을이 지고 있어요. 🌇
+        </p>
+        <p className="mt-5 font-hand text-xl drop-shadow">또 놀러 와요! 🍦</p>
+      </div>
+      <button onClick={onRestart} className="candy-btn mt-6 w-full px-6 py-4 text-lg">
+        🏠 처음으로
+      </button>
     </div>
   );
 }
