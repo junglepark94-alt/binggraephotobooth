@@ -38,7 +38,10 @@ bunx tsc --noEmit  # 타입체크
 - `src/routes/index.tsx` — 앱 전체. 단일 페이지 상태머신으로 5단계 진행:
   `prologue1 → prologue2 → select(프레임 선택) → shoot(촬영) → result(합성/저장/공유)`
   - `ShootScreen`: `getUserMedia`로 셀카 미리보기(좌우 반전), 3초 카운트다운 ×4컷 캡처
-  - `ResultScreen`: 4컷을 프레임에 합성, PNG 저장 / Web Share API 공유
+  - `ResultScreen`: 4컷을 프레임에 합성한 뒤 `PhotoEditor`로 꾸미기, PNG 저장 / Web Share API 공유
+  - `PhotoEditor`: 합성된 스트립 위에 스티커(이모지)·브러시 그리기. 스티커/획 좌표·크기는
+    이미지 대비 **비율(0~1)** 로 저장해 화면 표시와 원본 해상도 PNG 내보내기가 일치한다.
+    저장/공유는 `exportPng()`(imperative handle)로 편집 결과를 원본 해상도로 재합성
 - `src/lib/photobooth.ts` — 핵심 이미지 로직:
   - `detectGreenSlots()` — 프레임 PNG의 **초록색 플레이스홀더** 영역을 flood-fill로 자동 감지해 사진이 들어갈 슬롯(최대 4개) 좌표를 계산
   - `fallbackSlots()` — 감지가 4개 미만이면 균등 분할 레이아웃으로 폴백
