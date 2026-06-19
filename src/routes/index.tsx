@@ -49,7 +49,7 @@ const FRAMES: Record<FrameKey, { name: string; subtitle: string; frame: string; 
   binggraeus: { name: "Binggraeus", subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임", frame: frameBinggraeus, overlay: overlayBinggraeus, overlays: [overlayBinggraeusSlot1, overlayBinggraeusSlot2, overlayBinggraeusSlot3, overlayBinggraeusSlot4], tint: "from-rose-300 to-amber-200" },
 };
 
-type Step = "prologue1" | "prologue2" | "select" | "shoot" | "result";
+type Step = "prologue1" | "prologue2" | "letter" | "select" | "shoot" | "result";
 
 function useFramePreviews() {
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -137,16 +137,19 @@ function App() {
             image={prologue2}
             alt="프롤로그 2"
             onBack={() => setStep("prologue1")}
-            onNext={() => setStep("select")}
+            onNext={() => setStep("letter")}
             overlayButton
             hotspotStyle={{ left: "31.11%", top: "52.40%", width: "38.43%", height: "3.75%" }}
           />
+        )}
+        {step === "letter" && (
+          <LetterScreen onBack={() => setStep("prologue2")} onNext={() => setStep("select")} />
         )}
         {step === "select" && (
           <SelectScreen
             value={frameKey}
             onChange={setFrameKey}
-            onBack={() => setStep("prologue2")}
+            onBack={() => setStep("letter")}
             onNext={() => frameKey && setStep("shoot")}
           />
         )}
@@ -184,6 +187,50 @@ function PrivacyNote() {
     <p className="mt-6 text-center text-xs text-muted-foreground">
       사진은 기기에서만 처리되며 서버에 저장되지 않습니다.
     </p>
+  );
+}
+
+// 빙그레 축제로 이동 중 로딩 (스토리보드 B-SCREEN)
+function FestivalLoading({ text }: { text: string }) {
+  return (
+    <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center text-center">
+      <div className="text-6xl">🎪</div>
+      <div className="mt-6 h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <p className="mt-4 font-hand text-lg text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+// "From. 빙그레…" 편지 인트로 (스토리보드 A-SCREEN) → 짧은 로딩(B-SCREEN) → 프레임 선택
+function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (!leaving) return;
+    const t = setTimeout(onNext, 1400);
+    return () => clearTimeout(t);
+  }, [leaving, onNext]);
+
+  if (leaving) return <FestivalLoading text="빙그레 축제로 이동 중…" />;
+
+  return (
+    <div className="mx-auto max-w-md">
+      <Header title="빙그레 왕국" onBack={onBack} />
+      <div className="festival-card mt-6 p-6">
+        <div className="flex items-center justify-between">
+          <span className="font-hand text-xl text-primary">From. 빙그레…</span>
+          <span className="text-2xl">💌</span>
+        </div>
+        <div className="my-4 border-t border-dashed border-border" />
+        <div className="space-y-4 text-[15px] leading-relaxed text-foreground">
+          <p>두 왕국이 만나 하나의 아이스크림 왕국이 되었습니다! 🍦👑</p>
+          <p>오늘부터 마을 광장에서 여름 축제가 시작됩니다.</p>
+          <p>축제 속 숨겨진 이벤트와 추억을 함께 남겨보세요. ✨</p>
+        </div>
+      </div>
+      <button onClick={() => setLeaving(true)} className="candy-btn mt-6 w-full px-6 py-4 text-lg">
+        축제 즐기러 가기 🎪
+      </button>
+    </div>
   );
 }
 
@@ -903,9 +950,18 @@ function ResultScreen({
   const [stripSize, setStripSize] = useState<{ w: number; h: number } | null>(null);
   const [status, setStatus] = useState("네컷을 합성하는 중…");
   const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<EditorHandle>(null);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const f = FRAMES[frameKey];
+
+  useEffect(
+    () => () => {
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    },
+    [],
+  );
 
   // 편집 결과(스티커·브러시 포함)를 PNG로. 에디터 준비 전이면 원본 스트립 사용.
   const exportImage = () => editorRef.current?.exportPng() ?? stripUrl;
@@ -951,6 +1007,9 @@ function ResultScreen({
     a.href = url;
     a.download = `binggrae-fourcut-${frameKey}.png`;
     a.click();
+    setSaved(true);
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSaved(false), 5000);
   };
 
   const share = async () => {
@@ -987,6 +1046,12 @@ function ResultScreen({
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               <p className="text-sm text-muted-foreground">{status}</p>
             </div>
+          </div>
+        )}
+        {saved && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl bg-secondary/70 px-4 py-3 text-center text-sm font-bold text-secondary-foreground ring-1 ring-border">
+            <span className="text-lg">🎉</span>
+            사진이 저장되었습니다! 갤러리(다운로드)를 확인해보세요.
           </div>
         )}
         {shareMsg && <p className="text-center text-xs text-muted-foreground">{shareMsg}</p>}
