@@ -136,7 +136,7 @@ function App() {
   return (
     <div className="min-h-screen text-foreground">
       <div className="mx-auto w-full max-w-md px-5 pb-10 pt-8 md:max-w-3xl lg:max-w-6xl md:px-8 md:pt-12">
-        {step !== "main" && <FestivalHeader />}
+        {step !== "main" && step !== "letter" && <FestivalHeader />}
         {step === "main" && <MainScreen onStart={() => setStep("letter")} />}
         {step === "letter" && (
           <LetterScreen onBack={() => setStep("main")} onNext={() => setStep("map")} />
@@ -222,26 +222,50 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
     return () => clearTimeout(t);
   }, [leaving, onNext]);
 
-  if (leaving) return <FestivalLoading text="빙그레 축제로 이동 중…" />;
-
   return (
-    <div className="mx-auto max-w-md">
-      <Header title="빙그레 왕국" onBack={onBack} />
-      <div className="festival-card mt-6 p-6">
-        <div className="flex items-center justify-between">
-          <span className="font-hand text-xl text-primary">From. 빙그레…</span>
-          <span className="text-2xl">💌</span>
-        </div>
-        <div className="my-4 border-t border-dashed border-border" />
-        <div className="space-y-4 text-[15px] leading-relaxed text-foreground">
-          <p>두 왕국이 만나 하나의 아이스크림 왕국이 되었습니다! 🍦👑</p>
-          <p>오늘부터 마을 광장에서 여름 축제가 시작됩니다.</p>
-          <p>축제 속 숨겨진 이벤트와 추억을 함께 남겨보세요. ✨</p>
-        </div>
+    <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
+      <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
+        {/* 메인과 동일한 배경 */}
+        <img src={mainBg} alt="" className="absolute inset-0 h-full w-full object-cover" />
+
+        {leaving ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 text-center">
+            <div className="text-6xl">🎪</div>
+            <div className="mt-5 h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
+            <p className="mt-3 font-hand text-lg font-bold text-white drop-shadow">빙그레 축제로 이동 중…</p>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={onBack}
+              className="absolute left-3 top-3 z-10 rounded-full bg-white/80 px-3 py-1.5 text-sm font-bold text-foreground shadow ring-1 ring-border active:scale-95"
+            >
+              ← 뒤로
+            </button>
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-5">
+              {/* 편지 창 (window 에셋 들어올 자리 — 현재는 카드 placeholder) */}
+              <div className="festival-card w-full max-w-sm bg-white/90 p-6 backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-hand text-xl text-primary">From. 빙그레…</span>
+                  <span className="text-2xl">💌</span>
+                </div>
+                <div className="my-4 border-t border-dashed border-border" />
+                <div className="space-y-4 text-[15px] leading-relaxed text-foreground">
+                  <p>두 왕국이 만나 하나의 아이스크림 왕국이 되었습니다! 🍦👑</p>
+                  <p>오늘부터 마을 광장에서 여름 축제가 시작됩니다.</p>
+                  <p>축제 속 숨겨진 이벤트와 추억을 함께 남겨보세요. ✨</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setLeaving(true)}
+                className="candy-btn mt-5 w-full max-w-sm px-6 py-4 text-lg"
+              >
+                축제 즐기러 가기 🎪
+              </button>
+            </div>
+          </>
+        )}
       </div>
-      <button onClick={() => setLeaving(true)} className="candy-btn mt-6 w-full px-6 py-4 text-lg">
-        축제 즐기러 가기 🎪
-      </button>
     </div>
   );
 }
@@ -445,7 +469,7 @@ function MainScreen({ onStart }: { onStart: () => void }) {
           <button onClick={onStart} className="relative block w-full max-w-[330px] transition active:scale-95">
             <img src={btnImg} alt="" draggable={false} className="w-full select-none" />
             <span
-              className="absolute inset-0 flex items-center justify-center pr-[15%] font-display text-2xl font-extrabold text-white"
+              className="absolute inset-0 flex items-center justify-center font-display text-2xl font-extrabold text-white"
               style={{ textShadow: "0 2px 5px rgba(196,74,120,0.6), 0 1px 0 #e07ba6" }}
             >
               게임 시작
