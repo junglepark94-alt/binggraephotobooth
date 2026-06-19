@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   type CSSProperties,
+  type Dispatch,
   type PointerEvent as ReactPointerEvent,
+  type SetStateAction,
   forwardRef,
   useEffect,
   useImperativeHandle,
@@ -49,7 +51,10 @@ const FRAMES: Record<FrameKey, { name: string; subtitle: string; frame: string; 
   binggraeus: { name: "Binggraeus", subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임", frame: frameBinggraeus, overlay: overlayBinggraeus, overlays: [overlayBinggraeusSlot1, overlayBinggraeusSlot2, overlayBinggraeusSlot3, overlayBinggraeusSlot4], tint: "from-rose-300 to-amber-200" },
 };
 
-type Step = "prologue1" | "prologue2" | "letter" | "select" | "shoot" | "result" | "draw" | "end";
+type Step = "prologue1" | "prologue2" | "letter" | "map" | "select" | "shoot" | "result" | "draw" | "end";
+
+type Inventory = { photo: boolean; candy: boolean; heart: boolean; clover: boolean };
+const EMPTY_INVENTORY: Inventory = { photo: false, candy: false, heart: false, clover: false };
 
 function useFramePreviews() {
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -118,6 +123,14 @@ function App() {
   const [step, setStep] = useState<Step>("prologue1");
   const [frameKey, setFrameKey] = useState<FrameKey | null>(null);
   const [shots, setShots] = useState<string[]>([]);
+  const [inv, setInv] = useState<Inventory>(EMPTY_INVENTORY);
+
+  const restart = () => {
+    setShots([]);
+    setFrameKey(null);
+    setInv(EMPTY_INVENTORY);
+    setStep("prologue1");
+  };
 
   return (
     <div className="min-h-screen text-foreground">
@@ -143,13 +156,22 @@ function App() {
           />
         )}
         {step === "letter" && (
-          <LetterScreen onBack={() => setStep("prologue2")} onNext={() => setStep("select")} />
+          <LetterScreen onBack={() => setStep("prologue2")} onNext={() => setStep("map")} />
+        )}
+        {step === "map" && (
+          <FestivalMap
+            inv={inv}
+            setInv={setInv}
+            onPhoto={() => setStep("select")}
+            onDraw={() => setStep("draw")}
+            onEnd={() => setStep("end")}
+          />
         )}
         {step === "select" && (
           <SelectScreen
             value={frameKey}
             onChange={setFrameKey}
-            onBack={() => setStep("letter")}
+            onBack={() => setStep("map")}
             onNext={() => frameKey && setStep("shoot")}
           />
         )}
@@ -157,7 +179,7 @@ function App() {
           <ShootScreen
             frameKey={frameKey}
             onBack={() => setStep("select")}
-            onDone={(s) => { setShots(s); setStep("result"); }}
+            onDone={(s) => { setShots(s); setInv((v) => ({ ...v, photo: true })); setStep("result"); }}
           />
         )}
         {step === "result" && frameKey && (
@@ -166,16 +188,14 @@ function App() {
             shots={shots}
             onRetake={() => { setShots([]); setStep("shoot"); }}
             onChangeFrame={() => { setShots([]); setStep("select"); }}
-            onDraw={() => setStep("draw")}
+            onBackToMap={() => setStep("map")}
           />
         )}
         {step === "draw" && (
-          <DrawScreen onBack={() => setStep("result")} onEnd={() => setStep("end")} />
+          <DrawScreen onBack={() => setStep("map")} onEnd={() => setStep("end")} />
         )}
         {step === "end" && (
-          <EndScreen
-            onRestart={() => { setShots([]); setFrameKey(null); setStep("prologue1"); }}
-          />
+          <EndScreen onRestart={restart} />
         )}
       </div>
     </div>
@@ -240,6 +260,160 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
         축제 즐기러 가기 🎪
       </button>
     </div>
+  );
+}
+
+// ───────────────────────── 축제 맵 허브 (스토리보드 C-SCREEN) ─────────────────────────
+// 장소(사진 부스·뽑기)와 친구들(강아지·왕자·주민)을 눌러 아이템을 모은다.
+//   강아지 → 🍬사탕 → 왕자에게 → ❤️하트 / 사진 촬영 → 📷 → 주민에게 → 🍀클로버 → 뽑기 해금
+
+const INV_ITEMS: { key: keyof Inventory; emoji: string; label: string }[] = [
+  { key: "photo", emoji: "📷", label: "사진" },
+  { key: "candy", emoji: "🍬", label: "사탕" },
+  { key: "heart", emoji: "❤️", label: "하트" },
+  { key: "clover", emoji: "🍀", label: "클로버" },
+];
+
+function FestivalMap({
+  inv,
+  setInv,
+  onPhoto,
+  onDraw,
+  onEnd,
+}: {
+  inv: Inventory;
+  setInv: Dispatch<SetStateAction<Inventory>>;
+  onPhoto: () => void;
+  onDraw: () => void;
+  onEnd: () => void;
+}) {
+  const [bubble, setBubble] = useState<{ who: string; text: string } | null>(null);
+  const say = (who: string, text: string) => setBubble({ who, text });
+
+  const tapDog = () => {
+    if (!inv.candy) {
+      setInv((v) => ({ ...v, candy: true }));
+      say("강아지 🐶", "아이스크림 사탕을 멋진 주인님(왕자)에게 가져다줘! 🍬");
+    } else say("강아지 🐶", "왕자님께 사탕을 전해줘!");
+  };
+  const tapPrince = () => {
+    if (inv.candy && !inv.heart) {
+      setInv((v) => ({ ...v, heart: true }));
+      say("왕자 🤴", "고마워! 사진 찍고 행운의 아이스크림을 뽑아봐! ❤️");
+    } else if (!inv.candy) say("왕자 🤴", "사진을 찍으면 전설의 뽑기 클로버를 준대~");
+    else say("왕자 🤴", "사진 찍고 행운의 아이스크림을 뽑아봐!");
+  };
+  const tapResident = () => {
+    if (inv.photo && !inv.clover) {
+      setInv((v) => ({ ...v, clover: true }));
+      say("주민 🧑‍🌾", "이야~ 잘 나왔다! 행운의 클로버를 줄게 🍀");
+    } else if (!inv.photo) say("주민 🧑‍🌾", "아이스크림을 좋아해? 사진 부스에서 네컷을 찍어와 봐!");
+    else say("주민 🧑‍🌾", "그 클로버로 아이스크림을 뽑아봐!");
+  };
+  const tapDraw = () => {
+    if (inv.clover) onDraw();
+    else say("뽑기 기계 🎰", "전설의 클로버가 필요해! 사진을 찍어 주민에게 보여줘.");
+  };
+
+  return (
+    <div className="mx-auto max-w-md">
+      <Header title="여름 축제 한가운데" />
+
+      {/* 인벤토리 */}
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        {INV_ITEMS.map((it) => (
+          <div
+            key={it.key}
+            className={`flex flex-col items-center rounded-2xl px-2 py-2 text-xs font-bold ring-1 ring-border transition ${
+              inv[it.key] ? "bg-secondary/60 text-secondary-foreground" : "bg-card/60 text-muted-foreground opacity-50"
+            }`}
+          >
+            <span className="text-xl">{it.emoji}</span>
+            {it.label}
+          </div>
+        ))}
+      </div>
+
+      {/* 말풍선 */}
+      <div className="mt-3 min-h-[3.75rem]">
+        {bubble && (
+          <div className="festival-card p-3 text-sm leading-relaxed">
+            <b className="text-primary">{bubble.who}</b>
+            <span className="ml-1">{bubble.text}</span>
+          </div>
+        )}
+      </div>
+
+      {/* 맵 */}
+      <div
+        className="relative mt-1 overflow-hidden rounded-3xl ring-1 ring-border"
+        style={{ aspectRatio: "3 / 4", background: "linear-gradient(180deg,#bfe3ff 0%,#e3f6da 55%,#c4ecca 100%)" }}
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <span className="absolute left-[44%] top-[3%] text-4xl">🏰</span>
+          <span className="absolute left-[8%] top-[5%] text-2xl">🎏</span>
+          <span className="absolute right-[9%] top-[5%] text-2xl">🎐</span>
+          <span className="absolute bottom-[3%] left-[6%] text-2xl">🌷</span>
+          <span className="absolute bottom-[3%] right-[7%] text-2xl">🌻</span>
+        </div>
+        <MapSpot left="22%" top="27%" emoji="📸" label="사진 부스" highlight onClick={onPhoto} />
+        <MapSpot left="78%" top="27%" emoji="🍦" label="뽑기 기계" highlight={inv.clover} onClick={tapDraw} />
+        <MapSpot left="19%" top="55%" emoji="🤴" label="왕자" attention={inv.candy && !inv.heart} onClick={tapPrince} />
+        <MapSpot left="81%" top="55%" emoji="🧑‍🌾" label="주민" attention={inv.photo && !inv.clover} onClick={tapResident} />
+        <MapSpot left="30%" top="82%" emoji="🐶" label="강아지" attention={!inv.candy} onClick={tapDog} />
+        <MapSpot left="70%" top="82%" emoji="🏊" label="수영장" onClick={() => say("수영장 🏊", "물놀이는 다음에! 지금은 축제를 즐겨봐 ☀️")} />
+      </div>
+
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        장소와 친구들을 눌러 아이템을 모으고, 클로버로 아이스크림을 뽑아보세요!
+      </p>
+
+      <button onClick={onEnd} className="candy-btn mt-3 w-full px-6 py-4 text-lg">
+        🌅 축제 마치기
+      </button>
+    </div>
+  );
+}
+
+function MapSpot({
+  left,
+  top,
+  emoji,
+  label,
+  onClick,
+  highlight,
+  attention,
+}: {
+  left: string;
+  top: string;
+  emoji: string;
+  label: string;
+  onClick: () => void;
+  highlight?: boolean;
+  attention?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ left, top }}
+      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1"
+    >
+      <span
+        className={`relative grid h-14 w-14 place-items-center rounded-full bg-white/85 text-3xl shadow-md ring-2 transition active:scale-90 ${
+          highlight ? "ring-primary" : "ring-white"
+        }`}
+      >
+        {emoji}
+        {attention && (
+          <span className="absolute -right-1 -top-1 grid h-5 w-5 animate-bounce place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+            !
+          </span>
+        )}
+      </span>
+      <span className="whitespace-nowrap rounded-full bg-white/80 px-2 py-0.5 text-xs font-bold text-foreground shadow-sm">
+        {label}
+      </span>
+    </button>
   );
 }
 
@@ -953,8 +1127,8 @@ function EditToolButton({
 }
 
 function ResultScreen({
-  frameKey, shots, onRetake, onChangeFrame, onDraw,
-}: { frameKey: FrameKey; shots: string[]; onRetake: () => void; onChangeFrame: () => void; onDraw: () => void }) {
+  frameKey, shots, onRetake, onChangeFrame, onBackToMap,
+}: { frameKey: FrameKey; shots: string[]; onRetake: () => void; onChangeFrame: () => void; onBackToMap: () => void }) {
   const [stripUrl, setStripUrl] = useState<string | null>(null);
   const [stripSize, setStripSize] = useState<{ w: number; h: number } | null>(null);
   const [status, setStatus] = useState("네컷을 합성하는 중…");
@@ -1070,8 +1244,8 @@ function ResultScreen({
           <button onClick={save} disabled={!stripUrl} className="candy-btn px-4 py-3">💾 저장</button>
           <button onClick={share} disabled={!stripUrl} className="candy-btn-sky candy-btn px-4 py-3">🔗 공유</button>
         </div>
-        <button onClick={onDraw} className="candy-btn w-full px-6 py-4 text-lg">
-          🍦 오늘의 아이스크림 운세 뽑기
+        <button onClick={onBackToMap} className="candy-btn w-full px-6 py-4 text-lg">
+          🎪 축제로 돌아가기
         </button>
         <PrivacyNote />
       </div>
@@ -1215,7 +1389,7 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
 
       <div className="mt-6 grid grid-cols-2 gap-3">
         <button onClick={onBack} className="candy-btn-mint candy-btn px-4 py-3">
-          ← 내 네컷
+          ← 축제로
         </button>
         <button onClick={onEnd} className="candy-btn px-4 py-3">
           🌅 축제 마치기
