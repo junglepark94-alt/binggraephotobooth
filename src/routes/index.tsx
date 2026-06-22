@@ -1010,7 +1010,7 @@ function ShootScreen({
         <div className="px-3 pb-6 pt-1">
           <WindowPanel onClose={onBack}>
             <div className="text-center">
-              <div className="text-5xl">😢</div>
+              <div className="mt-4 text-5xl">😢</div>
               <h3 className="mt-1 text-xl font-extrabold text-primary">카메라를 못 켰어요</h3>
               <p className="mt-2 text-sm leading-relaxed text-foreground/85">{error}</p>
               <SelectButton onClick={retry} label="다시 시도" className="mt-4" />
