@@ -673,8 +673,8 @@ function FestivalSelectBg({ onBack, children }: { onBack?: () => void; children:
       className="relative mx-auto max-w-md overflow-hidden rounded-3xl ring-1 ring-border"
       style={{
         backgroundColor: "#b5e3fe",
-        backgroundImage: "radial-gradient(rgba(255,255,255,0.85) 2.5px, transparent 3px)",
-        backgroundSize: "24px 24px",
+        backgroundImage: "radial-gradient(rgba(255,255,255,0.4) 2px, transparent 2.5px)",
+        backgroundSize: "21px 21px",
       }}
     >
       {/* 상단 배너 (성 + 현수막 + 가랜드) */}
