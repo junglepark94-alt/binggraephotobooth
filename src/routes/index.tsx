@@ -345,7 +345,13 @@ function useWhiteKeyed(src: string): string {
 }
 
 // 클로버=나뭇잎이라 아이콘은 총 4개. 빈 바(nav_bar_empty) 위 균등 4칸(dstCx)에 등장시킨다.
-const NAV_ICONS: { key: keyof Inventory; label: string; src: string; dstCx: number; h: number }[] = [
+const NAV_ICONS: {
+  key: keyof Inventory;
+  label: string;
+  src: string;
+  dstCx: number;
+  h: number;
+}[] = [
   { key: "photo", label: "사진", src: navIconPhoto, dstCx: 0.2, h: 92 },
   { key: "clover", label: "클로버", src: navIconClover, dstCx: 0.4, h: 92 },
   { key: "candy", label: "아이스크림", src: navIconCandy, dstCx: 0.6, h: 92 },
@@ -471,16 +477,6 @@ function FestivalMap({
           draggable={false}
         />
 
-        {/* 상단 배너 타이틀 (그림의 빈 배너 채우기) */}
-        <div className="absolute inset-x-0 top-[2.5%] flex justify-center">
-          <span
-            className="font-display text-sm font-extrabold text-white"
-            style={{ textShadow: "0 2px 4px rgba(196,74,120,0.7)" }}
-          >
-            빙그레 왕국 여름 축제
-          </span>
-        </div>
-
         {/* 축제 마치기 (메뉴바는 진행표시 전용이라 별도 버튼) */}
         <button
           onClick={onEnd}
@@ -489,48 +485,48 @@ function FestivalMap({
           마치기
         </button>
 
-        {/* 클릭 영역 (배경 위 투명 핫스팟) — 하단 캐릭터는 메뉴바에 가리지 않게 머리 위치로 */}
+        {/* 클릭 영역 (배경 위 투명 핫스팟) — 새 배경(festival_bg)에 맞춤 */}
         <Hotspot
-          left="55%"
-          top="53%"
-          width="24%"
-          height="24%"
+          left="57%"
+          top="58%"
+          width="31%"
+          height="26%"
           label="사진 부스"
           onClick={onPhoto}
           pulse
         />
         <Hotspot
-          left="84%"
-          top="22%"
+          left="86%"
+          top="34%"
           width="24%"
-          height="22%"
+          height="32%"
           label="뽑기 기계"
           onClick={tapDraw}
           pulse={inv.clover}
         />
         <Hotspot
-          left="33%"
-          top="63%"
-          width="18%"
-          height="20%"
+          left="34%"
+          top="67%"
+          width="13%"
+          height="15%"
           label="왕자"
           onClick={tapPrince}
           pulse={inv.candy && !inv.heart}
         />
         <Hotspot
-          left="16%"
-          top="78%"
+          left="20%"
+          top="80%"
           width="18%"
-          height="14%"
+          height="13%"
           label="강아지"
           onClick={tapDog}
           pulse={!inv.candy}
         />
         <Hotspot
-          left="73%"
-          top="76%"
-          width="52%"
-          height="17%"
+          left="69%"
+          top="84%"
+          width="62%"
+          height="18%"
           label="주민"
           onClick={tapResident}
           pulse={inv.photo && !inv.clover}
