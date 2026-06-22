@@ -152,7 +152,8 @@ function App() {
           step !== "letter" &&
           step !== "map" &&
           step !== "select" &&
-          step !== "shoot" && <FestivalHeader />}
+          step !== "shoot" &&
+          step !== "result" && <FestivalHeader />}
         {step === "main" && <MainScreen onStart={() => setStep("letter")} />}
         {step === "letter" && (
           <LetterScreen onBack={() => setStep("main")} onNext={() => setStep("map")} />
@@ -207,14 +208,6 @@ function FestivalHeader() {
       <div className="ribbon-title text-lg md:text-xl">🍦 빙그레 네컷 🍦</div>
       <p className="mt-2 font-hand text-base text-muted-foreground">빙그레 왕국 여름 축제</p>
     </div>
-  );
-}
-
-function PrivacyNote() {
-  return (
-    <p className="mt-6 text-center text-xs text-muted-foreground">
-      사진은 기기에서만 처리되며 서버에 저장되지 않습니다.
-    </p>
   );
 }
 
@@ -786,6 +779,36 @@ function WindowDialog({ onClose, children }: { onClose?: () => void; children: R
         {children}
       </div>
     </div>
+  );
+}
+
+// nav_bar_empty(핑크 바)를 배경으로 쓰는 버튼 + 글자 오버레이
+function NavBarButton({
+  onClick,
+  label,
+  disabled,
+  className,
+}: {
+  onClick: () => void;
+  label: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const src = useWhiteKeyed(navBarEmpty);
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`relative flex items-center justify-center text-center font-display font-extrabold transition active:scale-95 disabled:opacity-50 ${className ?? ""}`}
+      style={{
+        backgroundImage: `url(${src})`,
+        backgroundSize: "100% 100%",
+        backgroundRepeat: "no-repeat",
+        color: "#c44a78",
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -1521,8 +1544,18 @@ function EditToolButton({
 }
 
 function ResultScreen({
-  frameKey, shots, onRetake, onChangeFrame, onBackToMap,
-}: { frameKey: FrameKey; shots: string[]; onRetake: () => void; onChangeFrame: () => void; onBackToMap: () => void }) {
+  frameKey,
+  shots,
+  onRetake,
+  onChangeFrame,
+  onBackToMap,
+}: {
+  frameKey: FrameKey;
+  shots: string[];
+  onRetake: () => void;
+  onChangeFrame: () => void;
+  onBackToMap: () => void;
+}) {
   const [stripUrl, setStripUrl] = useState<string | null>(null);
   const [stripSize, setStripSize] = useState<{ w: number; h: number } | null>(null);
   const [status, setStatus] = useState("네컷을 합성하는 중…");
@@ -1532,6 +1565,7 @@ function ResultScreen({
   const editorRef = useRef<EditorHandle>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const f = FRAMES[frameKey];
+  const noteSrc = useWhiteKeyed(selectNote);
 
   useEffect(
     () => () => {
@@ -1607,14 +1641,16 @@ function ResultScreen({
   };
 
   return (
-    <div>
-      <Header title="나의 네컷 꾸미기" onBack={onChangeFrame} />
-      {error && (
-        <div className="mt-3 rounded-xl bg-destructive/10 p-3 text-xs text-destructive ring-1 ring-destructive/30">
-          {error}
-        </div>
-      )}
-      <div className="mx-auto mt-4 max-w-md space-y-4">
+    <FestivalSelectBg onBack={onChangeFrame}>
+      <div className="space-y-3 px-4 pt-1">
+        <h2 className="text-center font-display text-lg font-extrabold text-primary drop-shadow-sm">
+          나의 네컷 꾸미기
+        </h2>
+        {error && (
+          <div className="rounded-xl bg-destructive/10 p-3 text-xs text-destructive ring-1 ring-destructive/30">
+            {error}
+          </div>
+        )}
         {stripUrl && stripSize ? (
           <PhotoEditor ref={editorRef} src={stripUrl} width={stripSize.w} height={stripSize.h} />
         ) : (
@@ -1626,24 +1662,47 @@ function ResultScreen({
           </div>
         )}
         {saved && (
-          <div className="flex items-center justify-center gap-2 rounded-2xl bg-secondary/70 px-4 py-3 text-center text-sm font-bold text-secondary-foreground ring-1 ring-border">
+          <div className="flex items-center justify-center gap-2 rounded-2xl bg-white/80 px-4 py-3 text-center text-sm font-bold text-primary ring-1 ring-white">
             <span className="text-lg">🎉</span>
             사진이 저장되었습니다! 갤러리(다운로드)를 확인해보세요.
           </div>
         )}
-        {shareMsg && <p className="text-center text-xs text-muted-foreground">{shareMsg}</p>}
+        {shareMsg && (
+          <p className="rounded-xl bg-white/70 px-3 py-2 text-center text-xs text-foreground/70">
+            {shareMsg}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={onRetake} className="candy-btn-mint candy-btn px-4 py-3">다시 찍기</button>
-          <button onClick={onChangeFrame} className="candy-btn-mint candy-btn px-4 py-3">프레임 변경</button>
-          <button onClick={save} disabled={!stripUrl} className="candy-btn px-4 py-3">💾 저장</button>
-          <button onClick={share} disabled={!stripUrl} className="candy-btn-sky candy-btn px-4 py-3">🔗 공유</button>
+          <NavBarButton onClick={onRetake} label="다시 찍기" className="py-3 text-sm" />
+          <NavBarButton onClick={onChangeFrame} label="프레임 변경" className="py-3 text-sm" />
+          <NavBarButton
+            onClick={save}
+            disabled={!stripUrl}
+            label="💾 저장"
+            className="py-3 text-sm"
+          />
+          <NavBarButton
+            onClick={share}
+            disabled={!stripUrl}
+            label="🔗 공유"
+            className="py-3 text-sm"
+          />
         </div>
-        <button onClick={onBackToMap} className="candy-btn w-full px-6 py-4 text-lg">
-          🎪 축제로 돌아가기
-        </button>
-        <PrivacyNote />
+        <NavBarButton
+          onClick={onBackToMap}
+          label="🎪 축제로 돌아가기"
+          className="w-full py-4 text-lg"
+        />
+
+        {/* 하단 안내 노트 (select_note + 글자 오버레이) */}
+        <div className="relative mx-auto mb-7 mt-1 w-[92%] max-w-[360px]">
+          <img src={noteSrc} alt="" draggable={false} className="w-full select-none" />
+          <span className="absolute inset-0 flex items-center justify-center px-[13%] text-center text-[12px] font-medium leading-tight text-amber-900/80">
+            촬영 및 업로드된 사진은 서버에 저장되지 않으며 사용자 기기에서만 사용됩니다.
+          </span>
+        </div>
       </div>
-    </div>
+    </FestivalSelectBg>
   );
 }
 
