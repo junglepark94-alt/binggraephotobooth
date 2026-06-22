@@ -768,6 +768,27 @@ function WindowPanel({
   );
 }
 
+// 내용 창(다이얼로그) — 이미지를 원본 비율로 그려 X·테두리 찌그러짐 없음.
+// 본문은 점선 아래 영역에 세로 중앙 배치.
+function WindowDialog({ onClose, children }: { onClose?: () => void; children: ReactNode }) {
+  const src = useWhiteKeyed(windowImg);
+  return (
+    <div className="relative mx-auto w-full max-w-[360px]">
+      <img src={src} alt="" draggable={false} className="w-full select-none" />
+      {onClose && (
+        <button
+          onClick={onClose}
+          aria-label="닫기"
+          className="absolute right-[4%] top-[1%] aspect-square w-[12%]"
+        />
+      )}
+      <div className="absolute inset-x-[10%] bottom-[8%] top-[16%] flex flex-col items-center justify-center">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // 프레임 선택 (스토리보드) — 축제 배경 + 크림 카드 리스트 + 캔디 버튼 + 안내 노트
 function SelectScreen({
   value,
@@ -976,7 +997,7 @@ function ShootScreen({
     return (
       <FestivalSelectBg onBack={onBack}>
         <div className="px-3 pb-6 pt-1">
-          <WindowPanel onClose={onBack}>
+          <WindowDialog onClose={onBack}>
             <div className="text-center">
               <img
                 src={photoIconSrc}
@@ -998,7 +1019,7 @@ function ShootScreen({
                 사진은 기기에서만 처리되며 서버에 저장되지 않습니다.
               </p>
             </div>
-          </WindowPanel>
+          </WindowDialog>
         </div>
       </FestivalSelectBg>
     );
@@ -1008,9 +1029,9 @@ function ShootScreen({
     return (
       <FestivalSelectBg onBack={onBack}>
         <div className="px-3 pb-6 pt-1">
-          <WindowPanel onClose={onBack}>
+          <WindowDialog onClose={onBack}>
             <div className="text-center">
-              <div className="mt-4 text-5xl">😢</div>
+              <div className="text-5xl">😢</div>
               <h3 className="mt-1 text-xl font-extrabold text-primary">카메라를 못 켰어요</h3>
               <p className="mt-2 text-sm leading-relaxed text-foreground/85">{error}</p>
               <SelectButton onClick={retry} label="다시 시도" className="mt-4" />
@@ -1018,7 +1039,7 @@ function ShootScreen({
                 계속 안 되면 주소창의 카메라 아이콘에서 권한을 “허용”으로 바꿔주세요.
               </p>
             </div>
-          </WindowPanel>
+          </WindowDialog>
         </div>
       </FestivalSelectBg>
     );
