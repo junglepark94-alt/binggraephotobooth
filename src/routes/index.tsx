@@ -305,7 +305,7 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
 
 // ───────────────────────── 축제 맵 허브 (스토리보드 C-SCREEN) ─────────────────────────
 // 장소(사진 부스·뽑기)와 친구들(강아지·왕자·주민)을 눌러 아이템을 모은다.
-//   강아지 → 🍬사탕 → 왕자에게 → ❤️하트 / 사진 촬영 → 📷 → 주민에게 → 🍀클로버 → 뽑기 해금
+//   강아지 → 🍦아이스크림 → 왕자에게 → ❤️하트 / 사진 촬영 → 📷 → 주민에게 → 🍀클로버 → 뽑기 해금
 
 // 흰 배경으로 내보내진 PNG(흰색이 alpha=255)의 흰 픽셀을 투명 처리한 data URL을 만든다.
 // 단, 네 모서리가 불투명 흰색일 때만 동작 — 이미 투명한 이미지(예: 흰 물방울 무늬 사탕)는
@@ -345,11 +345,11 @@ function useWhiteKeyed(src: string): string {
 }
 
 // 클로버=나뭇잎이라 아이콘은 총 4개. 빈 바(nav_bar_empty) 위 균등 4칸(dstCx)에 등장시킨다.
-const NAV_ICONS: { key: keyof Inventory; label: string; src: string; dstCx: number }[] = [
-  { key: "photo", label: "사진", src: navIconPhoto, dstCx: 0.2 },
-  { key: "clover", label: "클로버", src: navIconClover, dstCx: 0.4 },
-  { key: "candy", label: "사탕", src: navIconCandy, dstCx: 0.6 },
-  { key: "heart", label: "하트", src: navIconHeart, dstCx: 0.8 },
+const NAV_ICONS: { key: keyof Inventory; label: string; src: string; dstCx: number; h: number }[] = [
+  { key: "photo", label: "사진", src: navIconPhoto, dstCx: 0.2, h: 92 },
+  { key: "clover", label: "클로버", src: navIconClover, dstCx: 0.4, h: 92 },
+  { key: "candy", label: "아이스크림", src: navIconCandy, dstCx: 0.6, h: 92 },
+  { key: "heart", label: "하트", src: navIconHeart, dstCx: 0.8, h: 64 },
 ];
 
 function FestivalMap({
@@ -438,15 +438,15 @@ function FestivalMap({
   const tapDog = () => {
     if (!inv.candy) {
       setInv((v) => ({ ...v, candy: true }));
-      say("강아지 🐶", "아이스크림 사탕을 멋진 주인님(왕자)에게 가져다줘! 🍬");
-    } else say("강아지 🐶", "왕자님께 사탕을 전해줘!");
+      say("강아지 🐶", "아이스크림을 멋진 주인님(왕자)에게 가져다줘! 🍦");
+    } else say("강아지 🐶", "왕자님께 아이스크림을 전해줘!");
   };
   const tapPrince = () => {
     if (inv.candy && !inv.heart) {
       setInv((v) => ({ ...v, heart: true }));
-      say("왕자 🤴", "고마워! 사진 찍고 행운의 아이스크림을 뽑아봐! ❤️");
+      say("왕자 🤴", "고마워! 사진 찍고 오른쪽 뽑기 기계에서 행운의 아이스크림을 뽑아봐! ❤️");
     } else if (!inv.candy) say("왕자 🤴", "사진을 찍으면 전설의 뽑기 클로버를 준대~");
-    else say("왕자 🤴", "사진 찍고 행운의 아이스크림을 뽑아봐!");
+    else say("왕자 🤴", "사진 찍고 오른쪽 뽑기 기계에서 행운의 아이스크림을 뽑아봐!");
   };
   const tapResident = () => {
     if (inv.photo && !inv.clover) {
@@ -555,15 +555,15 @@ function FestivalMap({
                     src={navIconSrc[it.key]}
                     alt={it.label}
                     draggable={false}
-                    className="pointer-events-none absolute h-[92%] -translate-x-1/2 -translate-y-1/2 select-none"
-                    style={{ left: `${it.dstCx * 100}%`, top: "44%" }}
+                    className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 select-none"
+                    style={{ left: `${it.dstCx * 100}%`, top: "44%", height: `${it.h}%` }}
                   />
                 )}
                 <span
                   className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 text-[10px] font-extrabold"
                   style={{
                     left: `${it.dstCx * 100}%`,
-                    top: "90%",
+                    top: "80%",
                     color: "#c44a78",
                     opacity: inv[it.key] ? 1 : 0.5,
                   }}
