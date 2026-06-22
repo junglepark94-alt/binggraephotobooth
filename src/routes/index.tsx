@@ -28,6 +28,9 @@ import logo from "@/assets/logo_trim.png";
 import btnImg from "@/assets/button_trim.png";
 import windowImg from "@/assets/window_trim.png";
 import icecreamLoading from "@/assets/icecream_loading.png";
+import selectBg from "@/assets/select_bg.png";
+import selectButton from "@/assets/select_button.png";
+import selectNote from "@/assets/select_note.png";
 import festivalBg from "@/assets/festival_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
 import navIconPhoto from "@/assets/nav_icon_photo.png";
@@ -144,7 +147,10 @@ function App() {
   return (
     <div className="min-h-screen text-foreground">
       <div className="mx-auto w-full max-w-md px-5 pb-10 pt-8 md:max-w-3xl lg:max-w-6xl md:px-8 md:pt-12">
-        {step !== "main" && step !== "letter" && step !== "map" && <FestivalHeader />}
+        {step !== "main" &&
+          step !== "letter" &&
+          step !== "map" &&
+          step !== "select" && <FestivalHeader />}
         {step === "main" && <MainScreen onStart={() => setStep("letter")} />}
         {step === "letter" && (
           <LetterScreen onBack={() => setStep("main")} onNext={() => setStep("map")} />
@@ -658,45 +664,113 @@ function MainScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
+// 프레임 선택 (스토리보드) — select_bg 배경 + 크림 카드 리스트 + 캔디 버튼 + 안내 노트 + 장식 스크롤바
 function SelectScreen({
-  value, onChange, onBack, onNext,
-}: { value: FrameKey | null; onChange: (k: FrameKey) => void; onBack: () => void; onNext: () => void }) {
+  value,
+  onChange,
+  onBack,
+  onNext,
+}: {
+  value: FrameKey | null;
+  onChange: (k: FrameKey) => void;
+  onBack: () => void;
+  onNext: () => void;
+}) {
   const previews = useFramePreviews();
+  const keys = Object.keys(FRAMES) as FrameKey[];
+  const buttonSrc = useWhiteKeyed(selectButton); // 흰 배경 제거
+  const noteSrc = useWhiteKeyed(selectNote);
   return (
-    <div className="mx-auto max-w-5xl">
-      <Header title="프레임 선택" onBack={onBack} />
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {(Object.keys(FRAMES) as FrameKey[]).map((k) => {
+    <div
+      className="relative mx-auto max-w-md overflow-hidden rounded-3xl ring-1 ring-border"
+      style={{
+        backgroundColor: "#b5e3fe",
+        backgroundImage: "radial-gradient(rgba(255,255,255,0.85) 2.5px, transparent 3px)",
+        backgroundSize: "24px 24px",
+      }}
+    >
+      {/* 상단 배너 (select_bg 윗부분: 성 + 현수막 + 가랜드) */}
+      <div
+        className="w-full"
+        style={{
+          aspectRatio: "1024 / 485",
+          backgroundImage: `url(${selectBg})`,
+          backgroundSize: "100% auto",
+          backgroundPosition: "top",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+
+      {/* 뒤로 */}
+      <button
+        onClick={onBack}
+        className="absolute left-3 top-3 z-20 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-foreground shadow active:scale-95"
+      >
+        ← 뒤로
+      </button>
+
+      {/* 카드 리스트 (긴 페이지 — 아래로 자연 스크롤) */}
+      <div className="space-y-3 px-4 pt-1">
+        {keys.map((k) => {
           const f = FRAMES[k];
           const active = value === k;
           return (
             <button
               key={k}
               onClick={() => onChange(k)}
-              className={`festival-card relative flex items-center gap-4 p-3 text-left transition sm:flex-col sm:items-stretch sm:p-4 ${active ? "scale-[1.01] !border-primary shadow-lg shadow-primary/25" : ""}`}
+              className={`flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-left transition active:scale-[0.99] ${
+                active ? "border-primary" : "border-white/70"
+              }`}
+              style={{
+                background: "linear-gradient(180deg,#fffaf0,#fcedcd)",
+                boxShadow: "0 6px 14px -8px rgba(150,90,60,.45)",
+              }}
             >
-              <div className="relative flex h-40 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary/40 p-1 ring-1 ring-border sm:h-72 sm:w-full">
-                <img src={previews[k] ?? f.frame} alt={f.name} className="h-full w-full object-contain" />
+              <div className="h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-white/70 p-1 ring-1 ring-amber-200">
+                <img
+                  src={previews[k] ?? f.frame}
+                  alt={f.name}
+                  className="h-full w-full object-contain"
+                />
               </div>
-              <div className="flex-1 sm:mt-3">
-                <div className="text-lg font-bold">{f.name}</div>
-                <div className="mt-1 text-sm leading-snug text-muted-foreground">{f.subtitle}</div>
+              <div className="flex-1">
+                <div className="text-xl font-extrabold text-amber-900">{f.name}</div>
+                <div className="mt-1 text-xs leading-snug text-amber-800/80">{f.subtitle}</div>
               </div>
-              <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 sm:absolute sm:right-3 sm:top-3 ${active ? "border-primary bg-primary" : "border-border"}`}>
-                {active && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
+              <div
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${
+                  active ? "border-primary bg-primary" : "border-amber-300 bg-white"
+                }`}
+              >
+                {active && <div className="h-2.5 w-2.5 rounded-full bg-white" />}
               </div>
             </button>
           );
         })}
       </div>
+
+      {/* 촬영 시작 버튼 (빈 캔디 버튼 + 글자 오버레이) */}
       <button
-        disabled={!value}
         onClick={onNext}
-        className="candy-btn mt-8 w-full px-6 py-4 text-lg disabled:cursor-not-allowed md:mx-auto md:max-w-md"
+        disabled={!value}
+        className="relative mx-auto mt-6 block w-[88%] max-w-[330px] transition active:scale-95 disabled:opacity-50"
       >
-        촬영 시작
+        <img src={buttonSrc} alt="" draggable={false} className="w-full select-none" />
+        <span
+          className="absolute inset-0 flex items-center justify-center font-display text-xl font-extrabold text-white"
+          style={{ textShadow: "0 2px 5px rgba(196,74,120,0.6), 0 1px 0 #e07ba6" }}
+        >
+          촬영 시작
+        </span>
       </button>
-      <PrivacyNote />
+
+      {/* 하단 안내 노트 (빈 노트 + 글자 오버레이) */}
+      <div className="relative mx-auto mb-7 mt-3 w-[92%] max-w-[360px]">
+        <img src={noteSrc} alt="" draggable={false} className="w-full select-none" />
+        <span className="absolute inset-0 flex items-center justify-center px-[13%] text-center text-[12px] font-medium leading-tight text-amber-900/80">
+          촬영 및 업로드된 사진은 서버에 저장되지 않으며 사용자 기기에서만 사용됩니다.
+        </span>
+      </div>
     </div>
   );
 }
