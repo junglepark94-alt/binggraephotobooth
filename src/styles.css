@@ -245,6 +245,50 @@
       0 10px 16px rgba(208, 54, 110, 0.25);
   }
 
+  /* 통통 튀는 아이스크림 로딩 — squash & stretch + 그림자 */
+  .icecream-bounce {
+    transform-origin: center bottom;
+    image-rendering: pixelated;
+    will-change: transform;
+    animation: icecream-bounce 0.85s cubic-bezier(0.3, 0, 0.45, 1) infinite;
+  }
+  @keyframes icecream-bounce {
+    0% {
+      transform: translateY(0) scale(1.18, 0.82);
+    } /* 착지 — 납작하게 눌림 */
+    18% {
+      transform: translateY(0) scale(1.06, 0.94);
+    }
+    50% {
+      transform: translateY(-44px) scale(0.92, 1.08);
+    } /* 정점 — 길쭉하게 늘어남 */
+    82% {
+      transform: translateY(0) scale(1.06, 0.94);
+    }
+    100% {
+      transform: translateY(0) scale(1.18, 0.82);
+    }
+  }
+  .icecream-shadow {
+    width: 58px;
+    height: 12px;
+    border-radius: 9999px;
+    background: oklch(0.5 0.1 350 / 0.4);
+    filter: blur(2px);
+    animation: icecream-shadow 0.85s cubic-bezier(0.3, 0, 0.45, 1) infinite;
+  }
+  @keyframes icecream-shadow {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.45;
+    }
+    50% {
+      transform: scale(0.58);
+      opacity: 0.2;
+    } /* 정점일 때 그림자 작고 옅게 */
+  }
+
   /* 리본 배너 타이틀 */
   .ribbon-title {
     display: inline-block;

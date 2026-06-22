@@ -27,6 +27,13 @@ import mainBg from "@/assets/main_bg.png";
 import logo from "@/assets/logo_trim.png";
 import btnImg from "@/assets/button_trim.png";
 import windowImg from "@/assets/window_trim.png";
+import icecreamLoading from "@/assets/icecream_loading.png";
+import festivalBg from "@/assets/festival_bg.png";
+import navBarEmpty from "@/assets/nav_bar_empty.png";
+import navIconPhoto from "@/assets/nav_icon_photo.png";
+import navIconClover from "@/assets/nav_icon_clover.png";
+import navIconCandy from "@/assets/nav_icon_candy.png";
+import navIconHeart from "@/assets/nav_icon_heart.png";
 import {
   type FrameKey,
   type Slot,
@@ -137,7 +144,7 @@ function App() {
   return (
     <div className="min-h-screen text-foreground">
       <div className="mx-auto w-full max-w-md px-5 pb-10 pt-8 md:max-w-3xl lg:max-w-6xl md:px-8 md:pt-12">
-        {step !== "main" && step !== "letter" && <FestivalHeader />}
+        {step !== "main" && step !== "letter" && step !== "map" && <FestivalHeader />}
         {step === "main" && <MainScreen onStart={() => setStep("letter")} />}
         {step === "letter" && (
           <LetterScreen onBack={() => setStep("main")} onNext={() => setStep("map")} />
@@ -240,6 +247,7 @@ function FestivalLoading({ text }: { text: string }) {
 // "From. 빙그레…" 편지 인트로 (스토리보드 A-SCREEN) → 짧은 로딩(B-SCREEN) → 프레임 선택
 function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const [leaving, setLeaving] = useState(false);
+  const icecream = useWhiteKeyed(icecreamLoading); // PNG 흰 배경 제거
   useEffect(() => {
     if (!leaving) return;
     const t = setTimeout(onNext, 1400);
@@ -254,9 +262,16 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
 
         {leaving ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/10 text-center">
-            <div className="text-6xl">🎪</div>
-            <div className="mt-5 h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
-            <p className="mt-3 font-hand text-lg font-bold text-white drop-shadow">빙그레 축제로 이동 중…</p>
+            <div className="flex flex-col items-center">
+              <img
+                src={icecream}
+                alt=""
+                draggable={false}
+                className="icecream-bounce h-36 w-36 select-none object-contain"
+              />
+              <div className="icecream-shadow" />
+            </div>
+            <p className="mt-6 font-hand text-lg font-bold text-white drop-shadow">빙그레 축제로 이동 중…</p>
           </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4">
@@ -292,11 +307,49 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
 // 장소(사진 부스·뽑기)와 친구들(강아지·왕자·주민)을 눌러 아이템을 모은다.
 //   강아지 → 🍬사탕 → 왕자에게 → ❤️하트 / 사진 촬영 → 📷 → 주민에게 → 🍀클로버 → 뽑기 해금
 
-const INV_ITEMS: { key: keyof Inventory; emoji: string; label: string }[] = [
-  { key: "photo", emoji: "📷", label: "사진" },
-  { key: "candy", emoji: "🍬", label: "사탕" },
-  { key: "heart", emoji: "❤️", label: "하트" },
-  { key: "clover", emoji: "🍀", label: "클로버" },
+// 흰 배경으로 내보내진 PNG(흰색이 alpha=255)의 흰 픽셀을 투명 처리한 data URL을 만든다.
+// 단, 네 모서리가 불투명 흰색일 때만 동작 — 이미 투명한 이미지(예: 흰 물방울 무늬 사탕)는
+// 무늬가 지워지지 않도록 원본을 그대로 돌려준다.
+function whiteKeyToDataURL(img: HTMLImageElement, threshold = 244): string {
+  const c = document.createElement("canvas");
+  const W = (c.width = img.naturalWidth);
+  const H = (c.height = img.naturalHeight);
+  const ctx = c.getContext("2d");
+  if (!ctx) return img.src;
+  ctx.drawImage(img, 0, 0);
+  const id = ctx.getImageData(0, 0, W, H);
+  const d = id.data;
+  const isWhite = (x: number, y: number) => {
+    const i = (y * W + x) * 4;
+    return d[i + 3] > 200 && d[i] > threshold && d[i + 1] > threshold && d[i + 2] > threshold;
+  };
+  const hasWhiteBg =
+    isWhite(1, 1) && isWhite(W - 2, 1) && isWhite(1, H - 2) && isWhite(W - 2, H - 2);
+  if (!hasWhiteBg) return img.src;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i] > threshold && d[i + 1] > threshold && d[i + 2] > threshold) d[i + 3] = 0;
+  }
+  ctx.putImageData(id, 0, 0);
+  return c.toDataURL();
+}
+
+// 이미지 소스를 흰 배경 제거 버전으로 바꿔 반환하는 훅(준비 전엔 원본 그대로).
+function useWhiteKeyed(src: string): string {
+  const [out, setOut] = useState(src);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setOut(whiteKeyToDataURL(img));
+    img.src = src;
+  }, [src]);
+  return out;
+}
+
+// 클로버=나뭇잎이라 아이콘은 총 4개. 빈 바(nav_bar_empty) 위 균등 4칸(dstCx)에 등장시킨다.
+const NAV_ICONS: { key: keyof Inventory; label: string; src: string; dstCx: number }[] = [
+  { key: "photo", label: "사진", src: navIconPhoto, dstCx: 0.2 },
+  { key: "clover", label: "클로버", src: navIconClover, dstCx: 0.4 },
+  { key: "candy", label: "사탕", src: navIconCandy, dstCx: 0.6 },
+  { key: "heart", label: "하트", src: navIconHeart, dstCx: 0.8 },
 ];
 
 function FestivalMap({
@@ -315,6 +368,73 @@ function FestivalMap({
   const [bubble, setBubble] = useState<{ who: string; text: string } | null>(null);
   const say = (who: string, text: string) => setBubble({ who, text });
 
+  // 빈 바: 흰 배경 제거 + 위아래 투명 여백 트림(핑크 알약이 하단 라벨 바로 위에 붙도록).
+  const [navBarSrc, setNavBarSrc] = useState<string>(navBarEmpty);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      const W = img.naturalWidth;
+      const H = img.naturalHeight;
+      const c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0);
+      const id = ctx.getImageData(0, 0, W, H);
+      const d = id.data;
+      const isWhite = (x: number, y: number) => {
+        const i = (y * W + x) * 4;
+        return d[i + 3] > 200 && d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244;
+      };
+      if (isWhite(1, 1) && isWhite(W - 2, 1) && isWhite(1, H - 2) && isWhite(W - 2, H - 2)) {
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244) d[i + 3] = 0;
+        }
+        ctx.putImageData(id, 0, 0);
+      }
+      // 불투명 픽셀 bounding box로 여백 트림
+      let minX = W,
+        minY = H,
+        maxX = -1,
+        maxY = -1;
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          if (d[(y * W + x) * 4 + 3] > 20) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      if (maxX < minX || maxY < minY) {
+        setNavBarSrc(c.toDataURL());
+        return;
+      }
+      const cw = maxX - minX + 1;
+      const ch = maxY - minY + 1;
+      const t = document.createElement("canvas");
+      t.width = cw;
+      t.height = ch;
+      const tctx = t.getContext("2d");
+      if (!tctx) {
+        setNavBarSrc(c.toDataURL());
+        return;
+      }
+      tctx.drawImage(c, minX, minY, cw, ch, 0, 0, cw, ch);
+      setNavBarSrc(t.toDataURL());
+    };
+    img.src = navBarEmpty;
+  }, []);
+  // 아이콘 4종 — 흰 배경으로 온 에셋은 자동으로 흰색을 투명 처리한다.
+  const navIconSrc: Record<keyof Inventory, string> = {
+    photo: useWhiteKeyed(navIconPhoto),
+    clover: useWhiteKeyed(navIconClover),
+    candy: useWhiteKeyed(navIconCandy),
+    heart: useWhiteKeyed(navIconHeart),
+  };
+
   const tapDog = () => {
     if (!inv.candy) {
       setInv((v) => ({ ...v, candy: true }));
@@ -331,9 +451,9 @@ function FestivalMap({
   const tapResident = () => {
     if (inv.photo && !inv.clover) {
       setInv((v) => ({ ...v, clover: true }));
-      say("주민 🧑‍🌾", "이야~ 잘 나왔다! 행운의 클로버를 줄게 🍀");
-    } else if (!inv.photo) say("주민 🧑‍🌾", "아이스크림을 좋아해? 사진 부스에서 네컷을 찍어와 봐!");
-    else say("주민 🧑‍🌾", "그 클로버로 아이스크림을 뽑아봐!");
+      say("주민 🧑", "이야~ 잘 나왔다! 행운의 클로버를 줄게 🍀");
+    } else if (!inv.photo) say("주민 🧑", "아이스크림을 좋아해? 사진 부스에서 네컷을 찍어와 봐!");
+    else say("주민 🧑", "그 클로버로 아이스크림을 뽑아봐!");
   };
   const tapDraw = () => {
     if (inv.clover) onDraw();
@@ -341,103 +461,154 @@ function FestivalMap({
   };
 
   return (
-    <div className="mx-auto max-w-md">
-      <Header title="여름 축제 한가운데" />
+    <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
+      <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
+        {/* 축제 배경 일러스트 */}
+        <img
+          src={festivalBg}
+          alt="빙그레 왕국 여름 축제"
+          className="absolute inset-0 h-full w-full select-none object-cover"
+          draggable={false}
+        />
 
-      {/* 인벤토리 */}
-      <div className="mt-3 grid grid-cols-4 gap-2">
-        {INV_ITEMS.map((it) => (
-          <div
-            key={it.key}
-            className={`flex flex-col items-center rounded-2xl px-2 py-2 text-xs font-bold ring-1 ring-border transition ${
-              inv[it.key] ? "bg-secondary/60 text-secondary-foreground" : "bg-card/60 text-muted-foreground opacity-50"
-            }`}
+        {/* 상단 배너 타이틀 (그림의 빈 배너 채우기) */}
+        <div className="absolute inset-x-0 top-[2.5%] flex justify-center">
+          <span
+            className="font-display text-sm font-extrabold text-white"
+            style={{ textShadow: "0 2px 4px rgba(196,74,120,0.7)" }}
           >
-            <span className="text-xl">{it.emoji}</span>
-            {it.label}
-          </div>
-        ))}
-      </div>
+            빙그레 왕국 여름 축제
+          </span>
+        </div>
 
-      {/* 말풍선 */}
-      <div className="mt-3 min-h-[3.75rem]">
+        {/* 축제 마치기 (메뉴바는 진행표시 전용이라 별도 버튼) */}
+        <button
+          onClick={onEnd}
+          className="absolute right-3 top-3 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-foreground shadow active:scale-95"
+        >
+          마치기
+        </button>
+
+        {/* 클릭 영역 (배경 위 투명 핫스팟) — 하단 캐릭터는 메뉴바에 가리지 않게 머리 위치로 */}
+        <Hotspot
+          left="55%"
+          top="53%"
+          width="24%"
+          height="24%"
+          label="사진 부스"
+          onClick={onPhoto}
+          pulse
+        />
+        <Hotspot
+          left="84%"
+          top="22%"
+          width="24%"
+          height="22%"
+          label="뽑기 기계"
+          onClick={tapDraw}
+          pulse={inv.clover}
+        />
+        <Hotspot
+          left="33%"
+          top="63%"
+          width="18%"
+          height="20%"
+          label="왕자"
+          onClick={tapPrince}
+          pulse={inv.candy && !inv.heart}
+        />
+        <Hotspot
+          left="16%"
+          top="78%"
+          width="18%"
+          height="14%"
+          label="강아지"
+          onClick={tapDog}
+          pulse={!inv.candy}
+        />
+        <Hotspot
+          left="73%"
+          top="76%"
+          width="52%"
+          height="17%"
+          label="주민"
+          onClick={tapResident}
+          pulse={inv.photo && !inv.clover}
+        />
+
+        {/* 말풍선 */}
         {bubble && (
-          <div className="festival-card p-3 text-sm leading-relaxed">
+          <div className="festival-card absolute inset-x-3 top-[8%] z-20 p-3 text-sm leading-relaxed">
             <b className="text-primary">{bubble.who}</b>
             <span className="ml-1">{bubble.text}</span>
           </div>
         )}
-      </div>
 
-      {/* 맵 */}
-      <div
-        className="relative mt-1 overflow-hidden rounded-3xl ring-1 ring-border"
-        style={{ aspectRatio: "3 / 4", background: "linear-gradient(180deg,#bfe3ff 0%,#e3f6da 55%,#c4ecca 100%)" }}
-      >
-        <div className="pointer-events-none absolute inset-0">
-          <span className="absolute left-[44%] top-[3%] text-4xl">🏰</span>
-          <span className="absolute left-[8%] top-[5%] text-2xl">🎏</span>
-          <span className="absolute right-[9%] top-[5%] text-2xl">🎐</span>
-          <span className="absolute bottom-[3%] left-[6%] text-2xl">🌷</span>
-          <span className="absolute bottom-[3%] right-[7%] text-2xl">🌻</span>
+        {/* 하단 메뉴바 — 원래 비율 유지. 아이콘은 크게(바 위로 살짝 솟음), 라벨은 바 안 하단 */}
+        <div className="absolute inset-x-0 bottom-[3%] z-0 px-2">
+          <div className="relative">
+            <img src={navBarSrc} alt="" className="w-full select-none" draggable={false} />
+            {NAV_ICONS.map((it) => (
+              <div key={it.key}>
+                {inv[it.key] && (
+                  <img
+                    src={navIconSrc[it.key]}
+                    alt={it.label}
+                    draggable={false}
+                    className="pointer-events-none absolute h-[92%] -translate-x-1/2 -translate-y-1/2 select-none"
+                    style={{ left: `${it.dstCx * 100}%`, top: "44%" }}
+                  />
+                )}
+                <span
+                  className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 text-[10px] font-extrabold"
+                  style={{
+                    left: `${it.dstCx * 100}%`,
+                    top: "90%",
+                    color: "#c44a78",
+                    opacity: inv[it.key] ? 1 : 0.5,
+                  }}
+                >
+                  {it.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-        <MapSpot left="22%" top="27%" emoji="📸" label="사진 부스" highlight onClick={onPhoto} />
-        <MapSpot left="78%" top="27%" emoji="🍦" label="뽑기 기계" highlight={inv.clover} onClick={tapDraw} />
-        <MapSpot left="19%" top="55%" emoji="🤴" label="왕자" attention={inv.candy && !inv.heart} onClick={tapPrince} />
-        <MapSpot left="81%" top="55%" emoji="🧑‍🌾" label="주민" attention={inv.photo && !inv.clover} onClick={tapResident} />
-        <MapSpot left="30%" top="82%" emoji="🐶" label="강아지" attention={!inv.candy} onClick={tapDog} />
-        <MapSpot left="70%" top="82%" emoji="🏊" label="수영장" onClick={() => say("수영장 🏊", "물놀이는 다음에! 지금은 축제를 즐겨봐 ☀️")} />
       </div>
-
-      <p className="mt-3 text-center text-xs text-muted-foreground">
-        장소와 친구들을 눌러 아이템을 모으고, 클로버로 아이스크림을 뽑아보세요!
-      </p>
-
-      <button onClick={onEnd} className="candy-btn mt-3 w-full px-6 py-4 text-lg">
-        🌅 축제 마치기
-      </button>
     </div>
   );
 }
 
-function MapSpot({
+// 배경 일러스트 위의 투명 클릭 영역. left/top은 영역의 중심.
+function Hotspot({
   left,
   top,
-  emoji,
+  width,
+  height,
   label,
   onClick,
-  highlight,
-  attention,
+  pulse,
 }: {
   left: string;
   top: string;
-  emoji: string;
+  width: string;
+  height: string;
   label: string;
   onClick: () => void;
-  highlight?: boolean;
-  attention?: boolean;
+  pulse?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      style={{ left, top }}
-      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1"
+      aria-label={label}
+      style={{ left, top, width, height }}
+      className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-2xl ring-2 ring-transparent transition hover:ring-white/70 active:scale-95"
     >
-      <span
-        className={`relative grid h-14 w-14 place-items-center rounded-full bg-white/85 text-3xl shadow-md ring-2 transition active:scale-90 ${
-          highlight ? "ring-primary" : "ring-white"
-        }`}
-      >
-        {emoji}
-        {attention && (
-          <span className="absolute -right-1 -top-1 grid h-5 w-5 animate-bounce place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-            !
-          </span>
-        )}
-      </span>
-      <span className="whitespace-nowrap rounded-full bg-white/80 px-2 py-0.5 text-xs font-bold text-foreground shadow-sm">
-        {label}
-      </span>
+      {pulse && (
+        <span className="absolute right-0 top-0 grid h-5 w-5 animate-bounce place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow">
+          !
+        </span>
+      )}
     </button>
   );
 }
