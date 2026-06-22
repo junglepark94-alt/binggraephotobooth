@@ -3,6 +3,7 @@ import {
   type CSSProperties,
   type Dispatch,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
   type SetStateAction,
   forwardRef,
   useEffect,
@@ -150,7 +151,8 @@ function App() {
         {step !== "main" &&
           step !== "letter" &&
           step !== "map" &&
-          step !== "select" && <FestivalHeader />}
+          step !== "select" &&
+          step !== "shoot" && <FestivalHeader />}
         {step === "main" && <MainScreen onStart={() => setStep("letter")} />}
         {step === "letter" && (
           <LetterScreen onBack={() => setStep("main")} onNext={() => setStep("map")} />
@@ -664,7 +666,109 @@ function MainScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
-// 프레임 선택 (스토리보드) — select_bg 배경 + 크림 카드 리스트 + 캔디 버튼 + 안내 노트 + 장식 스크롤바
+// 프레임 선택/촬영 공통 배경 — select_bg 상단 배너 + 무한 물방울 패턴(긴 페이지)
+function FestivalSelectBg({ onBack, children }: { onBack?: () => void; children: ReactNode }) {
+  return (
+    <div
+      className="relative mx-auto max-w-md overflow-hidden rounded-3xl ring-1 ring-border"
+      style={{
+        backgroundColor: "#b5e3fe",
+        backgroundImage: "radial-gradient(rgba(255,255,255,0.85) 2.5px, transparent 3px)",
+        backgroundSize: "24px 24px",
+      }}
+    >
+      {/* 상단 배너 (성 + 현수막 + 가랜드) */}
+      <div
+        className="w-full"
+        style={{
+          aspectRatio: "1024 / 485",
+          backgroundImage: `url(${selectBg})`,
+          backgroundSize: "100% auto",
+          backgroundPosition: "top",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute left-3 top-3 z-20 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-foreground shadow active:scale-95"
+        >
+          ← 뒤로
+        </button>
+      )}
+      {children}
+    </div>
+  );
+}
+
+// 캔디 버튼 (select_button 에셋 + 글자 오버레이)
+function SelectButton({
+  onClick,
+  label,
+  disabled,
+  className,
+}: {
+  onClick: () => void;
+  label: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const src = useWhiteKeyed(selectButton);
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`relative mx-auto block w-full max-w-[330px] transition active:scale-95 disabled:opacity-50 ${className ?? ""}`}
+    >
+      <img src={src} alt="" draggable={false} className="w-full select-none" />
+      <span
+        className="absolute inset-0 flex items-center justify-center font-display text-xl font-extrabold text-white"
+        style={{ textShadow: "0 2px 5px rgba(196,74,120,0.6), 0 1px 0 #e07ba6" }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// 내용 창 (window 에셋) — 제목 + X(닫기) + 본문. 배경 늘려 내용 높이에 맞춤.
+function WindowPanel({
+  title,
+  onClose,
+  children,
+}: {
+  title?: string;
+  onClose?: () => void;
+  children: ReactNode;
+}) {
+  const src = useWhiteKeyed(windowImg);
+  return (
+    <div
+      className="relative w-full"
+      style={{
+        backgroundImage: `url(${src})`,
+        backgroundSize: "100% 100%",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {onClose && (
+        <button
+          onClick={onClose}
+          aria-label="닫기"
+          className="absolute right-[3%] top-[1%] z-10 aspect-square w-[12%]"
+        />
+      )}
+      {title && (
+        <div className="absolute inset-x-[14%] top-[4.5%] truncate text-center font-display text-base font-extrabold text-primary">
+          {title}
+        </div>
+      )}
+      <div className="px-[9%] pb-[8%] pt-[16%]">{children}</div>
+    </div>
+  );
+}
+
+// 프레임 선택 (스토리보드) — 축제 배경 + 크림 카드 리스트 + 캔디 버튼 + 안내 노트
 function SelectScreen({
   value,
   onChange,
@@ -678,37 +782,9 @@ function SelectScreen({
 }) {
   const previews = useFramePreviews();
   const keys = Object.keys(FRAMES) as FrameKey[];
-  const buttonSrc = useWhiteKeyed(selectButton); // 흰 배경 제거
   const noteSrc = useWhiteKeyed(selectNote);
   return (
-    <div
-      className="relative mx-auto max-w-md overflow-hidden rounded-3xl ring-1 ring-border"
-      style={{
-        backgroundColor: "#b5e3fe",
-        backgroundImage: "radial-gradient(rgba(255,255,255,0.85) 2.5px, transparent 3px)",
-        backgroundSize: "24px 24px",
-      }}
-    >
-      {/* 상단 배너 (select_bg 윗부분: 성 + 현수막 + 가랜드) */}
-      <div
-        className="w-full"
-        style={{
-          aspectRatio: "1024 / 485",
-          backgroundImage: `url(${selectBg})`,
-          backgroundSize: "100% auto",
-          backgroundPosition: "top",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-
-      {/* 뒤로 */}
-      <button
-        onClick={onBack}
-        className="absolute left-3 top-3 z-20 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-foreground shadow active:scale-95"
-      >
-        ← 뒤로
-      </button>
-
+    <FestivalSelectBg onBack={onBack}>
       {/* 카드 리스트 (긴 페이지 — 아래로 자연 스크롤) */}
       <div className="space-y-3 px-4 pt-1">
         {keys.map((k) => {
@@ -749,20 +825,8 @@ function SelectScreen({
         })}
       </div>
 
-      {/* 촬영 시작 버튼 (빈 캔디 버튼 + 글자 오버레이) */}
-      <button
-        onClick={onNext}
-        disabled={!value}
-        className="relative mx-auto mt-6 block w-[88%] max-w-[330px] transition active:scale-95 disabled:opacity-50"
-      >
-        <img src={buttonSrc} alt="" draggable={false} className="w-full select-none" />
-        <span
-          className="absolute inset-0 flex items-center justify-center font-display text-xl font-extrabold text-white"
-          style={{ textShadow: "0 2px 5px rgba(196,74,120,0.6), 0 1px 0 #e07ba6" }}
-        >
-          촬영 시작
-        </span>
-      </button>
+      {/* 촬영 시작 버튼 */}
+      <SelectButton onClick={onNext} disabled={!value} label="촬영 시작" className="mt-6" />
 
       {/* 하단 안내 노트 (빈 노트 + 글자 오버레이) */}
       <div className="relative mx-auto mb-7 mt-3 w-[92%] max-w-[360px]">
@@ -771,7 +835,7 @@ function SelectScreen({
           촬영 및 업로드된 사진은 서버에 저장되지 않으며 사용자 기기에서만 사용됩니다.
         </span>
       </div>
-    </div>
+    </FestivalSelectBg>
   );
 }
 
@@ -792,8 +856,14 @@ function Header({ title, onBack }: { title: string; onBack?: () => void }) {
 }
 
 function ShootScreen({
-  frameKey, onBack, onDone,
-}: { frameKey: FrameKey; onBack: () => void; onDone: (shots: string[]) => void }) {
+  frameKey,
+  onBack,
+  onDone,
+}: {
+  frameKey: FrameKey;
+  onBack: () => void;
+  onDone: (shots: string[]) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -805,6 +875,7 @@ function ShootScreen({
   const streamRef = useRef<MediaStream | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const f = FRAMES[frameKey];
+  const photoIconSrc = useWhiteKeyed(navIconPhoto); // 카메라 아이콘(에셋)
 
   // 프레임/슬롯 준비 — 권한 불필요, 마운트 시 미리 계산.
   useEffect(() => {
@@ -903,40 +974,53 @@ function ShootScreen({
   // 카메라 권한 안내 화면 (스토리보드 E-SCREEN) — 촬영 전 권한 요청 가이드.
   if (!started) {
     return (
-      <div>
-        <Header title="카메라 준비" onBack={onBack} />
-        <div className="festival-card mx-auto mt-6 max-w-md p-7 text-center">
-          <div className="text-6xl">📸</div>
-          <h3 className="mt-4 text-xl font-bold text-primary">카메라를 켤게요</h3>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            네컷 촬영을 위해 카메라 접근 권한이 필요해요.
-            <br />
-            아래 버튼을 누르고 브라우저에서 <b className="text-foreground">“허용”</b>을 선택해주세요.
-          </p>
-          <button onClick={() => setStarted(true)} className="candy-btn mt-7 w-full px-6 py-4 text-lg">
-            허용하고 시작하기
-          </button>
-          <PrivacyNote />
+      <FestivalSelectBg onBack={onBack}>
+        <div className="px-3 pb-6 pt-1">
+          <WindowPanel onClose={onBack}>
+            <div className="text-center">
+              <img
+                src={photoIconSrc}
+                alt=""
+                draggable={false}
+                className="mx-auto h-16 w-16 select-none object-contain"
+              />
+              <h3 className="mt-1 text-xl font-extrabold text-primary">카메라 준비</h3>
+              <p className="mt-2 text-sm leading-relaxed text-foreground/80">
+                네컷 촬영을 위해 카메라 접근 권한이 필요해요. 아래 버튼을 누르고 브라우저에서
+                “허용”을 선택해주세요.
+              </p>
+              <SelectButton
+                onClick={() => setStarted(true)}
+                label="허용하고 시작하기"
+                className="mt-4"
+              />
+              <p className="mt-2 text-[11px] text-foreground/60">
+                사진은 기기에서만 처리되며 서버에 저장되지 않습니다.
+              </p>
+            </div>
+          </WindowPanel>
         </div>
-      </div>
+      </FestivalSelectBg>
     );
   }
 
   if (error) {
     return (
-      <div>
-        <Header title="카메라" onBack={onBack} />
-        <div className="festival-card mx-auto mt-6 max-w-md p-7 text-center">
-          <div className="text-6xl">😢</div>
-          <p className="mt-4 text-sm leading-relaxed">{error}</p>
-          <button onClick={retry} className="candy-btn mt-5 w-full px-6 py-3">
-            다시 시도
-          </button>
-          <p className="mt-3 text-xs text-muted-foreground">
-            계속 안 되면 주소창의 카메라 아이콘에서 권한을 “허용”으로 바꿔주세요.
-          </p>
+      <FestivalSelectBg onBack={onBack}>
+        <div className="px-3 pb-6 pt-1">
+          <WindowPanel onClose={onBack}>
+            <div className="text-center">
+              <div className="text-5xl">😢</div>
+              <h3 className="mt-1 text-xl font-extrabold text-primary">카메라를 못 켰어요</h3>
+              <p className="mt-2 text-sm leading-relaxed text-foreground/85">{error}</p>
+              <SelectButton onClick={retry} label="다시 시도" className="mt-4" />
+              <p className="mt-2 text-[11px] leading-snug text-foreground/60">
+                계속 안 되면 주소창의 카메라 아이콘에서 권한을 “허용”으로 바꿔주세요.
+              </p>
+            </div>
+          </WindowPanel>
         </div>
-      </div>
+      </FestivalSelectBg>
     );
   }
 
@@ -946,70 +1030,85 @@ function ShootScreen({
   const aspect = activeSlot ? `${activeSlot.w} / ${activeSlot.h}` : "3 / 4";
 
   return (
-    <div>
-      <Header title={`${Math.min(shots.length + 1, 4)} / 4 컷`} onBack={onBack} />
-      <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-      <div>
-      <div
-        className="relative mx-auto overflow-hidden rounded-3xl ring-1 ring-border"
-        style={{ aspectRatio: aspect, background: "#fdf9ee", maxWidth: 520 }}
-      >
-        {/* Live camera fills the active slot (cover keeps the selfie un-distorted) */}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ transform: "scaleX(-1)", zIndex: 0 }}
-        />
-        {/* Overlay stretched to fully fill the slot — matches final composition, no cropping */}
-        <img
-          src={f.overlays[Math.min(shots.length, f.overlays.length - 1)]}
-          alt=""
-          className="pointer-events-none absolute inset-0"
-          style={{ width: "100%", height: "100%", zIndex: 1 }}
-        />
-        {!ready && (
-          <div className="absolute inset-0 grid place-items-center bg-black/20" style={{ zIndex: 2 }}>
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-9 w-9 animate-spin rounded-full border-4 border-white border-t-transparent" />
-              <p className="text-sm font-bold text-white drop-shadow">카메라 불러오는 중…</p>
+    <FestivalSelectBg onBack={onBack}>
+      <div className="px-3 pb-6 pt-1">
+        <WindowPanel title={`${Math.min(shots.length + 1, 4)} / 4 컷`} onClose={onBack}>
+          {/* 카메라 미리보기 */}
+          <div
+            className="relative mx-auto overflow-hidden rounded-2xl ring-1 ring-border"
+            style={{ aspectRatio: aspect, background: "#fdf9ee", maxWidth: 280 }}
+          >
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ transform: "scaleX(-1)", zIndex: 0 }}
+            />
+            <img
+              src={f.overlays[Math.min(shots.length, f.overlays.length - 1)]}
+              alt=""
+              className="pointer-events-none absolute inset-0"
+              style={{ width: "100%", height: "100%", zIndex: 1 }}
+            />
+            {!ready && (
+              <div
+                className="absolute inset-0 grid place-items-center bg-black/20"
+                style={{ zIndex: 2 }}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-9 w-9 animate-spin rounded-full border-4 border-white border-t-transparent" />
+                  <p className="text-sm font-bold text-white drop-shadow">카메라 불러오는 중…</p>
+                </div>
+              </div>
+            )}
+            {countdown !== null && (
+              <div
+                className="absolute inset-0 grid place-items-center bg-black/30"
+                style={{ zIndex: 3 }}
+              >
+                <div className="text-8xl font-extrabold text-white drop-shadow-lg">{countdown}</div>
+              </div>
+            )}
+            <div
+              className="pointer-events-none absolute left-2 top-2 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-medium text-white"
+              style={{ zIndex: 3 }}
+            >
+              {f.name} · {Math.min(shots.length + 1, 4)}/4
             </div>
           </div>
-        )}
-        {countdown !== null && (
-          <div className="absolute inset-0 grid place-items-center bg-black/30" style={{ zIndex: 3 }}>
-            <div className="text-9xl font-extrabold text-white drop-shadow-lg">{countdown}</div>
-          </div>
-        )}
-        <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/50 px-3 py-1 text-xs font-medium text-white" style={{ zIndex: 3 }}>
-          {f.name} · {Math.min(shots.length + 1, 4)}/4
-        </div>
-      </div>
-      </div>
 
-      <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="relative aspect-square overflow-hidden rounded-lg bg-secondary ring-1 ring-border">
-            {shots[i] && (
-              <>
-                <img src={shots[i]} alt="" className="h-full w-full object-cover" />
-                <img src={f.overlays[i] ?? f.overlay} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
-              </>
-            )}
+          {/* 4컷 썸네일 */}
+          <div className="mx-auto mt-3 grid max-w-[280px] grid-cols-4 gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="relative aspect-square overflow-hidden rounded-lg bg-white/70 ring-1 ring-amber-200"
+              >
+                {shots[i] && (
+                  <>
+                    <img src={shots[i]} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={f.overlays[i] ?? f.overlay}
+                      alt=""
+                      className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                    />
+                  </>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <button onClick={startShooting} disabled={!ready || busy} className="candy-btn w-full px-6 py-4 text-lg">
-        {busy ? "촬영 중…" : ready ? "📸 4컷 촬영하기" : "카메라 불러오는 중…"}
-      </button>
-      <PrivacyNote />
+          <SelectButton
+            onClick={startShooting}
+            disabled={!ready || busy}
+            label={busy ? "촬영 중…" : ready ? "4컷 촬영하기" : "불러오는 중…"}
+            className="mt-4"
+          />
+        </WindowPanel>
       </div>
-      </div>
-    </div>
+    </FestivalSelectBg>
   );
 }
 
