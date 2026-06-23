@@ -36,6 +36,16 @@ import editToolbar from "@/assets/edit_toolbar.png";
 import resultActions from "@/assets/result_actions.png";
 import backButton from "@/assets/back_button.png";
 import fortuneButton from "@/assets/fortune_button.png";
+import imgBravocone from "@/assets/bravocone.png";
+import imgNougarbar from "@/assets/nougarbar.png";
+import imgHodumaru from "@/assets/hodumaru.png";
+import imgYomamte from "@/assets/yomamte.png";
+import imgBabambar from "@/assets/babambar.png";
+import imgTogether from "@/assets/together.jpg";
+import imgPollapo from "@/assets/pollapo.png";
+import imgTwinbar from "@/assets/twinbar.png";
+import imgBananamilk from "@/assets/bananamilk.png";
+import imgMelona from "@/assets/melona.png";
 import festivalBg from "@/assets/festival_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
 import navIconPhoto from "@/assets/nav_icon_photo.png";
@@ -478,6 +488,80 @@ function useKeyedCrop(src: string, crop: Crop): string {
   return out;
 }
 
+// 흰 배경 누끼: 모서리에서 flood-fill로 연결된 흰 영역만 투명화(제품 내부 흰색은 보존).
+// 이미 투명 PNG면 원본을 그대로 반환. 표시용이라 최대 512px로 축소해 처리한다.
+function useNukki(src: string): string {
+  const [out, setOut] = useState(src);
+  useEffect(() => {
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      const maxDim = 512;
+      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+      const W = Math.max(1, Math.round(img.naturalWidth * scale));
+      const H = Math.max(1, Math.round(img.naturalHeight * scale));
+      const c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext("2d");
+      if (!ctx) {
+        setOut(src);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, W, H);
+      const id = ctx.getImageData(0, 0, W, H);
+      const d = id.data;
+      const alphaAt = (x: number, y: number) => d[(y * W + x) * 4 + 3];
+      // 모서리가 이미 투명하면(누끼 완료) 원본 그대로 사용
+      if (
+        alphaAt(0, 0) < 20 &&
+        alphaAt(W - 1, 0) < 20 &&
+        alphaAt(0, H - 1) < 20 &&
+        alphaAt(W - 1, H - 1) < 20
+      ) {
+        setOut(src);
+        return;
+      }
+      const near = (i: number) => d[i] > 236 && d[i + 1] > 236 && d[i + 2] > 236;
+      const seen = new Uint8Array(W * H);
+      const stack: number[] = [];
+      const push = (x: number, y: number) => {
+        if (x < 0 || y < 0 || x >= W || y >= H) return;
+        stack.push(y * W + x);
+      };
+      for (let x = 0; x < W; x++) {
+        push(x, 0);
+        push(x, H - 1);
+      }
+      for (let y = 0; y < H; y++) {
+        push(0, y);
+        push(W - 1, y);
+      }
+      while (stack.length) {
+        const p = stack.pop()!;
+        if (seen[p]) continue;
+        seen[p] = 1;
+        if (!near(p * 4)) continue;
+        d[p * 4 + 3] = 0;
+        const x = p % W;
+        const y = (p / W) | 0;
+        push(x + 1, y);
+        push(x - 1, y);
+        push(x, y + 1);
+        push(x, y - 1);
+      }
+      ctx.putImageData(id, 0, 0);
+      setOut(c.toDataURL());
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+  return out;
+}
+
 // 클로버=나뭇잎이라 아이콘은 총 4개. 빈 바(nav_bar_empty) 위 균등 4칸(dstCx)에 등장시킨다.
 const NAV_ICONS: {
   key: keyof Inventory;
@@ -861,7 +945,9 @@ function SelectButton({
   );
 }
 
-// 내용 창 (window 에셋) — 제목 + X(닫기) + 본문. 배경 늘려 내용 높이에 맞춤.
+// 내용 창 (window 에셋) — 제목 + X(닫기) + 본문.
+// 창 원본 비율(1122x1402)을 고정해 X·테두리가 찌그러지지 않게 한다. 내용이 짧으면
+// min-h-full로 가운데 정렬해 비율 유지, 혹시 더 길어지면 그만큼 아래로 늘어난다.
 function WindowPanel({
   title,
   onClose,
@@ -876,6 +962,7 @@ function WindowPanel({
     <div
       className="relative w-full"
       style={{
+        aspectRatio: "1122 / 1402",
         backgroundImage: `url(${src})`,
         backgroundSize: "100% 100%",
         backgroundRepeat: "no-repeat",
@@ -893,7 +980,9 @@ function WindowPanel({
           {title}
         </div>
       )}
-      <div className="px-[9%] pb-[8%] pt-[16%]">{children}</div>
+      <div className="flex min-h-full flex-col justify-center px-[9%] pb-[8%] pt-[15%]">
+        <div className="w-full">{children}</div>
+      </div>
     </div>
   );
 }
@@ -1869,74 +1958,73 @@ function ResultScreen({
 // ───────────────────────── 아이스크림 뽑기 (스토리보드 J-SCREEN) ─────────────────────────
 // 스크래치 복권을 긁으면 오늘의 아이스크림 운세(10종)가 공개된다.
 
-type Fortune = { name: string; emoji: string; luck: number; message: string };
+type Fortune = { name: string; img: string; luck: number; message: string };
 
 const FORTUNES: Fortune[] = [
   {
-    name: "부라보",
-    emoji: "🍦",
+    name: "부라보콘",
+    img: imgBravocone,
     luck: 100,
     message:
       "오늘 하루 부라브라보 할 일이 가득하겠어요. 당신의 자신감이 멋진 결과를 만들어낼 거예요!",
   },
   {
-    name: "팽이팽이",
-    emoji: "🌀",
-    luck: 90,
-    message:
-      "팽팽 돌듯 다양한 기회가 찾아와요! 새로운 시도가 행운의 방향을 바꿔줄 거예요. 두근두근~",
-  },
-  {
     name: "누가바",
-    emoji: "🍫",
+    img: imgNougarbar,
     luck: 85,
     message:
-      "고소한 누가처럼 당신의 진심이 누군가의 마음을 녹일 거예요. 용기를 내 먼저 얘기해 보세요. 진심을 알아줄 거예요.",
+      "고소한 누가처럼 당신의 진심이 누군가의 마음을 녹일 거예요. 용기를 내 먼저 얘기해 보세요. 진심을 알아줄거예요.",
   },
   {
     name: "호두마루",
-    emoji: "🥜",
+    img: imgHodumaru,
     luck: 80,
     message: "호두처럼 묵묵히 쌓아온 노력의 결실을 맛볼 때예요!",
   },
   {
-    name: "투게더",
-    emoji: "🍨",
-    luck: 78,
-    message: "함께라서 더 행복한 하루! 소중한 사람들과의 시간이 큰 행운을 가져다줘요.",
-  },
-  {
-    name: "젤루조아",
-    emoji: "🍊",
-    luck: 72,
-    message: "그 동안 안 풀리던 일이 감귤의 깔끔하고 상쾌한 맛처럼 시원한 하루가 되겠어요.",
-  },
-  {
     name: "요맘때",
-    emoji: "🍧",
+    img: imgYomamte,
     luck: 70,
     message:
       "지친 마음에 달콤한 휴식이 필요해요. 가끔은 나를 위한 시간을 가져보세요. 새로운 에너지를 충전하면 더 좋은 일이 생길 거예요!",
   },
   {
-    name: "비비빅",
-    emoji: "🍡",
-    luck: 69,
-    message: "막혔던 일이 시원하게 해결되고, 기분 좋은 전환점이 찾아올 거예요.",
-  },
-  {
     name: "바밤바",
-    emoji: "🌰",
+    img: imgBabambar,
     luck: 60,
     message:
       "밤의 부드럽고 포슬함처럼 오늘 하루 조금 느려서 답답할 수도 있지만, 곧 좋은 소식이 기다리고 있겠어요!",
   },
   {
+    name: "투게더",
+    img: imgTogether,
+    luck: 78,
+    message: "함께라서 더 행복한 하루! 소중한 사람들과의 시간이 큰 행운을 가져다줘요.",
+  },
+  {
+    name: "폴라포",
+    img: imgPollapo,
+    luck: 90,
+    message: "폴라포처럼 끝~내주게 시원한 하루가 될 거예요!",
+  },
+  {
+    name: "쌍쌍바",
+    img: imgTwinbar,
+    luck: 72,
+    message: "사랑하는 사람과 잘될 수 있는 날이에요. 쌍쌍바 권해보는 거 어떠신가요?",
+  },
+  {
+    name: "바나나맛우유",
+    img: imgBananamilk,
+    luck: 69,
+    message: "막혔던 일이 시원하게 해결되고, 달달하고 기분 좋은 전환점이 찾아올 거예요.",
+  },
+  {
     name: "메로나",
-    emoji: "🍈",
+    img: imgMelona,
     luck: 50,
     message:
-      "주변이 시끄러운 하루일 수 있어요. 오늘은 메론 본연의 맛이 담긴 메로나를 먹으면서 적당한 휴식이 필요한 날이겠어요.",
+      "주변이 시끄러운 하루 일 수 있어요. 오늘은 메론 본연의 맛이 담긴 메로나를 먹으면서 적당한 휴식이 필요한 날이겠어요..",
   },
 ];
 
@@ -1947,6 +2035,7 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
   const fortune = useMemo(() => FORTUNES[Math.floor(Math.random() * FORTUNES.length)], []);
   const noteSrc = useWhiteKeyed(selectNote);
   const fortuneBar = useKeyedCrop(fortuneButton, FORTUNE_BTN_CROP);
+  const fortuneImg = useNukki(fortune.img);
 
   const W = 600;
   const H = 360;
@@ -2035,7 +2124,14 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
           >
             {/* 공개될 운세 (스크래치 아래) */}
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-6 text-center">
-              <div className="text-6xl">{fortune.emoji}</div>
+              <div className="flex h-[42%] w-full items-center justify-center">
+                <img
+                  src={fortuneImg}
+                  alt={fortune.name}
+                  draggable={false}
+                  className="max-h-full max-w-[70%] select-none object-contain drop-shadow-sm"
+                />
+              </div>
               <div className="mt-1 text-2xl font-bold text-primary">{fortune.name}</div>
               <div className="text-xs font-bold text-muted-foreground">
                 행운지수 {fortune.luck}%
