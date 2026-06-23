@@ -12,18 +12,10 @@ import {
   useRef,
   useState,
 } from "react";
-import frameWhite from "@/assets/frame_white.png";
-import frameBrown from "@/assets/frame_brown.png";
-import frameSkyblue from "@/assets/frame_skyblue.png";
 import frameBinggraeus from "@/assets/frame_binggraeus.png";
-import overlayWhite from "@/assets/overlay_white.png";
-import overlayBrown from "@/assets/overlay_brown.png";
-import overlaySkyblue from "@/assets/overlay_skyblue.png";
-import overlayBinggraeus from "@/assets/overlay_binggraeus.png";
-import overlayBinggraeusSlot1 from "@/assets/overlay_binggraeus_slot1.png";
-import overlayBinggraeusSlot2 from "@/assets/overlay_binggraeus_slot2.png";
-import overlayBinggraeusSlot3 from "@/assets/overlay_binggraeus_slot3.png";
-import overlayBinggraeusSlot4 from "@/assets/overlay_binggraeus_slot4.png";
+import frameMelonaprince from "@/assets/frame_melonaprince.png";
+import frameBravocone from "@/assets/frame_bravocone.png";
+import frameBananamilk from "@/assets/frame_bananamilk.png";
 import mainBg from "@/assets/main_bg.png";
 import logo from "@/assets/logo_trim.png";
 import btnImg from "@/assets/button_trim.png";
@@ -56,6 +48,7 @@ import {
   type FrameKey,
   type Slot,
   composeStrip,
+  createFrameOverlay,
   detectGreenSlots,
   fallbackSlots,
   loadImage,
@@ -74,6 +67,10 @@ export const Route = createFileRoute("/")({
   }),
 });
 
+// 1x1 투명 픽셀 — 새 프레임은 장식이 이미지에 포함돼 슬롯 오버레이가 필요 없다.
+const TRANSPARENT_PX =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
 const FRAMES: Record<
   FrameKey,
   {
@@ -85,42 +82,37 @@ const FRAMES: Record<
     tint: string;
   }
 > = {
-  white: {
-    name: "White",
-    subtitle: "두 왕국이 함께 나누게 된 부드럽고 포근한 아이스크림 프레임",
-    frame: frameWhite,
-    overlay: overlayWhite,
-    overlays: [overlayWhite, overlayWhite, overlayWhite, overlayWhite],
-    tint: "from-slate-100 to-white",
-  },
-  brown: {
-    name: "Brown",
-    subtitle: "두 왕국을 가로질러 모인 클래식한 디저트와 진하고 따뜻한 과자의 풍미를 담은 프레임",
-    frame: frameBrown,
-    overlay: overlayBrown,
-    overlays: [overlayBrown, overlayBrown, overlayBrown, overlayBrown],
-    tint: "from-amber-200 to-stone-300",
-  },
-  skyblue: {
-    name: "Skyblue",
-    subtitle: "더 넓어진 왕국에서 함께 즐기는 시원한 아이스크림의 산뜻함이 묻어나는 프레임",
-    frame: frameSkyblue,
-    overlay: overlaySkyblue,
-    overlays: [overlaySkyblue, overlaySkyblue, overlaySkyblue, overlaySkyblue],
-    tint: "from-sky-200 to-blue-100",
-  },
   binggraeus: {
-    name: "Binggraeus",
-    subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임",
+    name: "빙그레우스",
+    subtitle: "아이스크림 왕국의 국왕 빙그레우스와 함께 찍는 왕실 프레임",
     frame: frameBinggraeus,
-    overlay: overlayBinggraeus,
-    overlays: [
-      overlayBinggraeusSlot1,
-      overlayBinggraeusSlot2,
-      overlayBinggraeusSlot3,
-      overlayBinggraeusSlot4,
-    ],
+    overlay: TRANSPARENT_PX,
+    overlays: [TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX],
     tint: "from-rose-300 to-amber-200",
+  },
+  melonaprince: {
+    name: "메로나 옹떼 부르쟝",
+    subtitle: "우아한 멜론빛 왕자 메로나 옹떼 부르쟝과 함께 찍는 프레임",
+    frame: frameMelonaprince,
+    overlay: TRANSPARENT_PX,
+    overlays: [TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX],
+    tint: "from-lime-200 to-green-100",
+  },
+  bravocone: {
+    name: "부라보콘",
+    subtitle: "1970년부터 함께한 바삭한 콘과 달콤한 추억의 부라보콘 프레임",
+    frame: frameBravocone,
+    overlay: TRANSPARENT_PX,
+    overlays: [TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX],
+    tint: "from-amber-100 to-rose-100",
+  },
+  bananamilk: {
+    name: "바나나맛우유",
+    subtitle: "1974년부터 사랑받은 단지 모양 바나나맛우유 프레임",
+    frame: frameBananamilk,
+    overlay: TRANSPARENT_PX,
+    overlays: [TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX],
+    tint: "from-yellow-100 to-amber-100",
   },
 };
 
@@ -164,25 +156,8 @@ function useFramePreviews() {
             ctx.restore();
           }
 
-          // 3) outer frame on top, with green placeholder areas knocked out to transparent
-          const fc = document.createElement("canvas");
-          fc.width = frameImg.naturalWidth;
-          fc.height = frameImg.naturalHeight;
-          const fctx = fc.getContext("2d")!;
-          fctx.drawImage(frameImg, 0, 0);
-          const fid = fctx.getImageData(0, 0, fc.width, fc.height);
-          const fd = fid.data;
-          for (let i = 0; i < fd.length; i += 4) {
-            const r = fd[i],
-              g = fd[i + 1],
-              b = fd[i + 2],
-              a = fd[i + 3];
-            if (a > 128 && g > 180 && r < 120 && b < 120 && g > r + 80 && g > b + 80) {
-              fd[i + 3] = 0;
-            }
-          }
-          fctx.putImageData(fid, 0, 0);
-          ctx.drawImage(fc, 0, 0);
+          // 3) outer frame on top — 초록 플레이스홀더 + 바깥 흰 배경을 투명화한 레이어
+          ctx.drawImage(createFrameOverlay(frameImg), 0, 0);
 
           return [k, c.toDataURL("image/png")] as const;
         }),

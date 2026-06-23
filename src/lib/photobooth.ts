@@ -1,9 +1,17 @@
-export type FrameKey = "white" | "brown" | "skyblue" | "binggraeus";
+export type FrameKey = "binggraeus" | "melonaprince" | "bravocone" | "bananamilk";
 
-export interface Slot { x: number; y: number; w: number; h: number; }
+export interface Slot {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 function isPlaceholderGreen(data: Uint8ClampedArray, i: number) {
-  const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+  const r = data[i],
+    g = data[i + 1],
+    b = data[i + 2],
+    a = data[i + 3];
   return a > 128 && g > 180 && r < 120 && b < 120 && g > r + 80 && g > b + 80;
 }
 
@@ -32,8 +40,15 @@ export function detectGreenSlots(img: HTMLImageElement): Slot[] {
     for (let x = 0; x < width; x++) {
       const start = y * width + x;
       if (visited[start]) continue;
-      if (!isPlaceholderGreen(data, start * 4)) { visited[start] = 1; continue; }
-      let minX = x, maxX = x, minY = y, maxY = y, count = 0;
+      if (!isPlaceholderGreen(data, start * 4)) {
+        visited[start] = 1;
+        continue;
+      }
+      let minX = x,
+        maxX = x,
+        minY = y,
+        maxY = y,
+        count = 0;
       const queue: number[] = [start];
       visited[start] = 1;
       let head = 0;
@@ -70,7 +85,10 @@ export function detectGreenSlots(img: HTMLImageElement): Slot[] {
 export function drawCover(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement | HTMLCanvasElement,
-  x: number, y: number, w: number, h: number,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
 ) {
   const iw = (img as HTMLImageElement).naturalWidth || (img as HTMLCanvasElement).width;
   const ih = (img as HTMLImageElement).naturalHeight || (img as HTMLCanvasElement).height;
@@ -82,7 +100,41 @@ export function drawCover(
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
-function createFrameOverlay(frame: HTMLImageElement): HTMLCanvasElement {
+// 프레임 바깥의 단색 배경(흰색 또는 이미 투명한 영역)을 가장자리에서 flood-fill로 투명화.
+// 프레임 내부의 흰색(타이틀 글자·캐릭터 흰 털 등)은 가장자리와 연결되지 않아 보존된다.
+function removeEdgeBackground(d: Uint8ClampedArray, W: number, H: number) {
+  const isBg = (i: number) => d[i + 3] < 30 || (d[i] > 236 && d[i + 1] > 236 && d[i + 2] > 236);
+  const seen = new Uint8Array(W * H);
+  const stack: number[] = [];
+  const push = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= W || y >= H) return;
+    stack.push(y * W + x);
+  };
+  for (let x = 0; x < W; x++) {
+    push(x, 0);
+    push(x, H - 1);
+  }
+  for (let y = 0; y < H; y++) {
+    push(0, y);
+    push(W - 1, y);
+  }
+  while (stack.length) {
+    const p = stack.pop()!;
+    if (seen[p]) continue;
+    seen[p] = 1;
+    if (!isBg(p * 4)) continue;
+    d[p * 4 + 3] = 0;
+    const x = p % W;
+    const y = (p / W) | 0;
+    push(x + 1, y);
+    push(x - 1, y);
+    push(x, y + 1);
+    push(x, y - 1);
+  }
+}
+
+// 프레임을 "사진 위에 덮는" 레이어로 변환: 초록 플레이스홀더 + 바깥 흰 배경을 투명화.
+export function createFrameOverlay(frame: HTMLImageElement): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = frame.naturalWidth;
   canvas.height = frame.naturalHeight;
@@ -94,6 +146,7 @@ function createFrameOverlay(frame: HTMLImageElement): HTMLCanvasElement {
       image.data[i + 3] = 0;
     }
   }
+  removeEdgeBackground(image.data, canvas.width, canvas.height);
   ctx.putImageData(image, 0, 0);
   return canvas;
 }
@@ -130,11 +183,15 @@ export async function composeStrip(opts: {
 }
 
 export function fallbackSlots(img: HTMLImageElement): Slot[] {
-  const W = img.naturalWidth, H = img.naturalHeight;
+  const W = img.naturalWidth,
+    H = img.naturalHeight;
   const marginX = W * 0.06;
   const slotW = W - marginX * 2;
   const slotH = (H - marginX * 5 - H * 0.08) / 4;
   return Array.from({ length: 4 }).map((_, i) => ({
-    x: marginX, y: marginX + i * (slotH + marginX), w: slotW, h: slotH,
+    x: marginX,
+    y: marginX + i * (slotH + marginX),
+    w: slotW,
+    h: slotH,
   }));
 }
