@@ -33,6 +33,8 @@ import selectBg from "@/assets/select_bg.png";
 import selectButton from "@/assets/select_button.png";
 import selectNote from "@/assets/select_note.png";
 import editToolbar from "@/assets/edit_toolbar.png";
+import resultActions from "@/assets/result_actions.png";
+import backButton from "@/assets/back_button.png";
 import festivalBg from "@/assets/festival_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
 import navIconPhoto from "@/assets/nav_icon_photo.png";
@@ -346,22 +348,38 @@ function useWhiteKeyed(src: string): string {
   return out;
 }
 
-// edit_toolbar.png(1x3 크림 버튼 바)에서 바 영역만 크롭 + 흰 배경 투명 처리.
-// 원본은 위아래로 넓은 흰 여백이 있어, 측정한 바 박스만 잘라 w-full로 자연스러운 높이를 만든다.
-const TOOLBAR_CROP = { x0: 0.03, y0: 0.345, x1: 0.97, y1: 0.65 };
-// 세 셀의 가로 중심(크롭 좌표 기준). 원본 cx 0.186/0.5/0.814를 크롭 박스로 환산.
+// 흰 배경 RGB 버튼 에셋(edit_toolbar/result_actions/back_button)에서 지정 박스만 잘라
+// 흰색을 투명 처리. 원본은 바깥쪽 흰 여백이 넓어, 측정한 콘텐츠 박스만 크롭해
+// w-full로 자연스러운 높이를 만들고 그 위에 글자를 비율 좌표로 오버레이한다.
+type Crop = { x0: number; y0: number; x1: number; y1: number };
+
+// 1x3 툴바 바(되돌리기/스티커/브러시). 세 셀의 가로 중심은 크롭 박스 기준.
+const TOOLBAR_CROP: Crop = { x0: 0.03, y0: 0.345, x1: 0.97, y1: 0.65 };
 const TOOLBAR_CELL_CX = [0.165, 0.5, 0.834];
-function useEditToolbarBar(src: string): string {
+
+// 2x2 액션 그리드(다시찍기/프레임변경/저장/공유). 셀 중심은 크롭 박스 기준.
+const RESULT_ACTIONS_CROP: Crop = { x0: 0.06, y0: 0.2, x1: 0.94, y1: 0.81 };
+const RESULT_ACTIONS_CELLS = [
+  { cx: 0.257, cy: 0.292 },
+  { cx: 0.743, cy: 0.292 },
+  { cx: 0.257, cy: 0.725 },
+  { cx: 0.743, cy: 0.725 },
+];
+
+// 풀폭 버튼(축제로 돌아가기) — 단일 셀, 중앙 오버레이.
+const BACK_BTN_CROP: Crop = { x0: 0.01, y0: 0.05, x1: 0.99, y1: 0.95 };
+
+function useKeyedCrop(src: string, crop: Crop): string {
   const [out, setOut] = useState(src);
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
       const W = img.naturalWidth;
       const H = img.naturalHeight;
-      const sx = Math.round(TOOLBAR_CROP.x0 * W);
-      const sy = Math.round(TOOLBAR_CROP.y0 * H);
-      const sw = Math.round((TOOLBAR_CROP.x1 - TOOLBAR_CROP.x0) * W);
-      const sh = Math.round((TOOLBAR_CROP.y1 - TOOLBAR_CROP.y0) * H);
+      const sx = Math.round(crop.x0 * W);
+      const sy = Math.round(crop.y0 * H);
+      const sw = Math.round((crop.x1 - crop.x0) * W);
+      const sh = Math.round((crop.y1 - crop.y0) * H);
       const c = document.createElement("canvas");
       c.width = sw;
       c.height = sh;
@@ -380,7 +398,7 @@ function useEditToolbarBar(src: string): string {
       setOut(c.toDataURL());
     };
     img.src = src;
-  }, [src]);
+  }, [src, crop]);
   return out;
 }
 
@@ -821,35 +839,6 @@ function WindowDialog({ onClose, children }: { onClose?: () => void; children: R
   );
 }
 
-// nav_bar_empty(핑크 바)를 배경으로 쓰는 버튼 + 글자 오버레이
-function NavBarButton({
-  onClick,
-  label,
-  disabled,
-  className,
-}: {
-  onClick: () => void;
-  label: string;
-  disabled?: boolean;
-  className?: string;
-}) {
-  const src = useWhiteKeyed(navBarEmpty);
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`relative flex items-center justify-center text-center font-display font-extrabold transition active:scale-95 disabled:opacity-50 ${className ?? ""}`}
-      style={{
-        backgroundImage: `url(${src})`,
-        backgroundSize: "100% 100%",
-        backgroundRepeat: "no-repeat",
-        color: "#c44a78",
-      }}
-    >
-      {label}
-    </button>
-  );
-}
 
 // 프레임 선택 (스토리보드) — 축제 배경 + 크림 카드 리스트 + 캔디 버튼 + 안내 노트
 function SelectScreen({
@@ -1231,7 +1220,7 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [color, setColor] = useState(BRUSH_COLORS[0]);
     const [sizeIdx, setSizeIdx] = useState(1);
-    const toolbarBar = useEditToolbarBar(editToolbar);
+    const toolbarBar = useKeyedCrop(editToolbar, TOOLBAR_CROP);
 
     useEffect(() => {
       let cancelled = false;
@@ -1612,6 +1601,8 @@ function ResultScreen({
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const f = FRAMES[frameKey];
   const noteSrc = useWhiteKeyed(selectNote);
+  const actionsBar = useKeyedCrop(resultActions, RESULT_ACTIONS_CROP);
+  const backBar = useKeyedCrop(backButton, BACK_BTN_CROP);
 
   useEffect(
     () => () => {
@@ -1718,27 +1709,46 @@ function ResultScreen({
             {shareMsg}
           </p>
         )}
-        <div className="grid grid-cols-2 gap-3">
-          <NavBarButton onClick={onRetake} label="다시 찍기" className="py-3 text-sm" />
-          <NavBarButton onClick={onChangeFrame} label="프레임 변경" className="py-3 text-sm" />
-          <NavBarButton
-            onClick={save}
-            disabled={!stripUrl}
-            label="💾 저장"
-            className="py-3 text-sm"
-          />
-          <NavBarButton
-            onClick={share}
-            disabled={!stripUrl}
-            label="🔗 공유"
-            className="py-3 text-sm"
-          />
+        {/* 액션 4버튼 — result_actions(2x2 크림 그리드) 위에 셀별 오버레이 */}
+        <div className="relative w-full select-none">
+          <img src={actionsBar} alt="" draggable={false} className="w-full select-none" />
+          {[
+            { label: "다시 찍기", disabled: false, onClick: onRetake },
+            { label: "프레임 변경", disabled: false, onClick: onChangeFrame },
+            { label: "💾 저장", disabled: !stripUrl, onClick: save },
+            { label: "🔗 공유", disabled: !stripUrl, onClick: share },
+          ].map((b, i) => (
+            <button
+              key={b.label}
+              onClick={b.onClick}
+              disabled={b.disabled}
+              aria-label={b.label}
+              className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl text-center font-display font-extrabold leading-tight text-[#9c5a3c] transition active:scale-95 disabled:opacity-40"
+              style={{
+                left: `${RESULT_ACTIONS_CELLS[i].cx * 100}%`,
+                top: `${RESULT_ACTIONS_CELLS[i].cy * 100}%`,
+                width: "42%",
+                height: "34%",
+                fontSize: "clamp(12px, 3.6vw, 15px)",
+              }}
+            >
+              {b.label}
+            </button>
+          ))}
         </div>
-        <NavBarButton
-          onClick={onBackToMap}
-          label="🎪 축제로 돌아가기"
-          className="w-full py-4 text-lg"
-        />
+
+        {/* 축제로 돌아가기 — back_button(풀폭 크림 버튼) 위 중앙 오버레이 */}
+        <div className="relative w-full select-none">
+          <img src={backBar} alt="" draggable={false} className="w-full select-none" />
+          <button
+            onClick={onBackToMap}
+            aria-label="축제로 돌아가기"
+            className="absolute inset-0 flex items-center justify-center rounded-2xl text-center font-display font-extrabold text-[#9c5a3c] transition active:scale-95"
+            style={{ fontSize: "clamp(15px, 4.5vw, 19px)" }}
+          >
+            🎪 축제로 돌아가기
+          </button>
+        </div>
 
         {/* 하단 안내 노트 (select_note + 글자 오버레이) */}
         <div className="relative mx-auto mb-7 mt-1 w-[92%] max-w-[360px]">
