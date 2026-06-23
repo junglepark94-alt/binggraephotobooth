@@ -39,6 +39,7 @@ import imgTwinbar from "@/assets/twinbar.png";
 import imgBananamilk from "@/assets/bananamilk.png";
 import imgMelona from "@/assets/melona.png";
 import festivalBg from "@/assets/festival_bg.png";
+import endBg from "@/assets/end_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
 import navIconPhoto from "@/assets/nav_icon_photo.png";
 import navIconClover from "@/assets/nav_icon_clover.png";
@@ -2181,29 +2182,62 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
 }
 
 // ───────────────────────── 축제 종료 (스토리보드 END SCREEN) ─────────────────────────
+// 축제 종료 화면 — 노을 진 왕국 배경 + 안내 다이얼로그 + 하단 타이틀.
 function EndScreen({ onRestart }: { onRestart: () => void }) {
   return (
-    <div className="mx-auto max-w-md">
-      <div
-        className="festival-card relative overflow-hidden p-8 text-center text-white"
-        style={{ background: "linear-gradient(180deg, #ffb38a 0%, #ff7aa2 48%, #9a6ab0 100%)" }}
-      >
-        <div className="pointer-events-none absolute right-5 top-5 text-2xl opacity-90">⭐</div>
-        <div className="pointer-events-none absolute left-6 top-10 text-lg opacity-80">✨</div>
-        <div className="text-6xl drop-shadow">🌅</div>
-        <h2 className="mt-4 text-2xl font-bold drop-shadow">축제가 저물어요</h2>
-        <p className="mt-3 text-[15px] leading-relaxed drop-shadow">
-          하나의 왕국이 된 빙그레,
-          <br />
-          아이스크림 축제를 모두 즐겼어요.
-          <br />
-          노을이 지고 있어요. 🌇
-        </p>
-        <p className="mt-5 font-hand text-xl drop-shadow">또 놀러 와요! 🍦</p>
+    <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
+      <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
+        <img
+          src={endBg}
+          alt="노을이 진 빙그레 왕국"
+          className="absolute inset-0 h-full w-full select-none object-cover"
+          draggable={false}
+        />
+
+        <div className="absolute inset-0 flex flex-col px-6">
+          {/* 상단 로고 (메인페이지처럼 logo_trim) + 여름축제 서브타이틀 */}
+          <div className="mt-[3%] flex justify-center">
+            <div className="relative w-[80%] max-w-none">
+              <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
+              <svg
+                viewBox="0 0 929 538"
+                preserveAspectRatio="xMidYMid meet"
+                className="pointer-events-none absolute inset-0 h-full w-full"
+                aria-hidden="true"
+              >
+                <defs>
+                  <path id="endRibbonPath" d="M 148 450 Q 464 408 780 450" fill="none" />
+                </defs>
+                <text
+                  textAnchor="middle"
+                  fill="#b14a72"
+                  fontWeight={700}
+                  fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
+                  fontSize={34}
+                >
+                  <textPath href="#endRibbonPath" startOffset="50%">
+                    여름축제
+                  </textPath>
+                </text>
+              </svg>
+            </div>
+          </div>
+
+          {/* 창 (window 에셋) — 안내 + 처음으로 버튼 */}
+          <div className="mx-auto mt-[4%] w-full max-w-[310px]">
+            <WindowDialog onClose={onRestart}>
+              <div className="w-full text-center">
+                <p className="font-display text-[15px] font-extrabold leading-relaxed text-foreground">
+                  하나의 왕국이 된 빙그레,
+                  <br />
+                  아이스크림 축제를 모두 즐겼어요. 🌇
+                </p>
+                <SelectButton onClick={onRestart} label="처음으로" className="mt-4" />
+              </div>
+            </WindowDialog>
+          </div>
+        </div>
       </div>
-      <button onClick={onRestart} className="candy-btn mt-6 w-full px-6 py-4 text-lg">
-        🏠 처음으로
-      </button>
     </div>
   );
 }
