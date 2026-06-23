@@ -52,6 +52,7 @@ import {
   detectGreenSlots,
   fallbackSlots,
   loadImage,
+  sliceSlotOverlays,
 } from "@/lib/photobooth";
 
 export const Route = createFileRoute("/")({
@@ -1073,10 +1074,12 @@ function ShootScreen({
   const [busy, setBusy] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [slotOverlays, setSlotOverlays] = useState<string[]>([]);
   const f = FRAMES[frameKey];
   const photoIconSrc = useWhiteKeyed(navIconPhoto); // 카메라 아이콘(에셋)
 
   // 프레임/슬롯 준비 — 권한 불필요, 마운트 시 미리 계산.
+  // 슬롯별 오버레이(컷마다 겹쳐 들어온 캐릭터/장식)도 프레임에서 잘라 미리 만든다.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1085,6 +1088,7 @@ function ShootScreen({
       let detected = detectGreenSlots(frameImg);
       if (detected.length < 4) detected = fallbackSlots(frameImg);
       setSlots(detected);
+      setSlotOverlays(sliceSlotOverlays(frameImg, detected));
     })();
     return () => {
       cancelled = true;
@@ -1248,12 +1252,14 @@ function ShootScreen({
               className="absolute inset-0 h-full w-full object-cover"
               style={{ transform: "scaleX(-1)", zIndex: 0 }}
             />
-            <img
-              src={f.overlays[Math.min(shots.length, f.overlays.length - 1)]}
-              alt=""
-              className="pointer-events-none absolute inset-0"
-              style={{ width: "100%", height: "100%", zIndex: 1 }}
-            />
+            {slotOverlays[displayIndex] && (
+              <img
+                src={slotOverlays[displayIndex]}
+                alt=""
+                className="pointer-events-none absolute inset-0"
+                style={{ width: "100%", height: "100%", zIndex: 1 }}
+              />
+            )}
             {!ready && (
               <div
                 className="absolute inset-0 grid place-items-center bg-black/20"
@@ -1291,11 +1297,13 @@ function ShootScreen({
                 {shots[i] && (
                   <>
                     <img src={shots[i]} alt="" className="h-full w-full object-cover" />
-                    <img
-                      src={f.overlays[i] ?? f.overlay}
-                      alt=""
-                      className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-                    />
+                    {slotOverlays[i] && (
+                      <img
+                        src={slotOverlays[i]}
+                        alt=""
+                        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                      />
+                    )}
                   </>
                 )}
               </div>

@@ -151,6 +151,26 @@ export function createFrameOverlay(frame: HTMLImageElement): HTMLCanvasElement {
   return canvas;
 }
 
+// 각 슬롯 영역을 잘라 초록(사진 자리)만 투명 처리한 오버레이 4장.
+// 그 칸에 겹쳐 들어온 캐릭터/장식만 남아, 촬영 미리보기에 컷별로 띄울 수 있다.
+export function sliceSlotOverlays(frame: HTMLImageElement, slots: Slot[]): string[] {
+  return slots.map((s) => {
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(s.w));
+    c.height = Math.max(1, Math.round(s.h));
+    const ctx = c.getContext("2d");
+    if (!ctx) return "";
+    ctx.drawImage(frame, s.x, s.y, s.w, s.h, 0, 0, c.width, c.height);
+    const id = ctx.getImageData(0, 0, c.width, c.height);
+    const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (isPlaceholderGreen(d, i)) d[i + 3] = 0;
+    }
+    ctx.putImageData(id, 0, 0);
+    return c.toDataURL("image/png");
+  });
+}
+
 export async function composeStrip(opts: {
   frame: HTMLImageElement;
   overlays: HTMLImageElement[];
