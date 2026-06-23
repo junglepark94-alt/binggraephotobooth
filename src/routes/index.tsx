@@ -489,7 +489,7 @@ function FestivalMap({
         {/* 클릭 영역 (배경 위 투명 핫스팟) — 새 배경(festival_bg)에 맞춤 */}
         <Hotspot
           left="57%"
-          top="58%"
+          top="52%"
           width="31%"
           height="26%"
           label="사진 부스"
