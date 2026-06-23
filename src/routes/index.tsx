@@ -32,6 +32,7 @@ import icecreamLoading from "@/assets/icecream_loading.png";
 import selectBg from "@/assets/select_bg.png";
 import selectButton from "@/assets/select_button.png";
 import selectNote from "@/assets/select_note.png";
+import editToolbar from "@/assets/edit_toolbar.png";
 import festivalBg from "@/assets/festival_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
 import navIconPhoto from "@/assets/nav_icon_photo.png";
@@ -340,6 +341,44 @@ function useWhiteKeyed(src: string): string {
   useEffect(() => {
     const img = new Image();
     img.onload = () => setOut(whiteKeyToDataURL(img));
+    img.src = src;
+  }, [src]);
+  return out;
+}
+
+// edit_toolbar.png(1x3 크림 버튼 바)에서 바 영역만 크롭 + 흰 배경 투명 처리.
+// 원본은 위아래로 넓은 흰 여백이 있어, 측정한 바 박스만 잘라 w-full로 자연스러운 높이를 만든다.
+const TOOLBAR_CROP = { x0: 0.03, y0: 0.345, x1: 0.97, y1: 0.65 };
+// 세 셀의 가로 중심(크롭 좌표 기준). 원본 cx 0.186/0.5/0.814를 크롭 박스로 환산.
+const TOOLBAR_CELL_CX = [0.165, 0.5, 0.834];
+function useEditToolbarBar(src: string): string {
+  const [out, setOut] = useState(src);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      const W = img.naturalWidth;
+      const H = img.naturalHeight;
+      const sx = Math.round(TOOLBAR_CROP.x0 * W);
+      const sy = Math.round(TOOLBAR_CROP.y0 * H);
+      const sw = Math.round((TOOLBAR_CROP.x1 - TOOLBAR_CROP.x0) * W);
+      const sh = Math.round((TOOLBAR_CROP.y1 - TOOLBAR_CROP.y0) * H);
+      const c = document.createElement("canvas");
+      c.width = sw;
+      c.height = sh;
+      const ctx = c.getContext("2d");
+      if (!ctx) {
+        setOut(src);
+        return;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      const id = ctx.getImageData(0, 0, sw, sh);
+      const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244) d[i + 3] = 0;
+      }
+      ctx.putImageData(id, 0, 0);
+      setOut(c.toDataURL());
+    };
     img.src = src;
   }, [src]);
   return out;
@@ -1076,7 +1115,10 @@ function ShootScreen({
   return (
     <FestivalSelectBg onBack={onBack}>
       <div className="px-3 pb-6 pt-1">
-        <WindowPanel title={`${Math.min(shots.length + 1, 4)} / 4 컷`} onClose={onBack}>
+        <h2 className="mb-2 text-center font-display text-lg font-extrabold text-primary drop-shadow-sm">
+          {Math.min(shots.length + 1, 4)} / 4 컷
+        </h2>
+        <WindowPanel onClose={onBack}>
           {/* 카메라 미리보기 */}
           <div
             className="relative mx-auto overflow-hidden rounded-2xl ring-1 ring-border"
@@ -1189,6 +1231,7 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [color, setColor] = useState(BRUSH_COLORS[0]);
     const [sizeIdx, setSizeIdx] = useState(1);
+    const toolbarBar = useEditToolbarBar(editToolbar);
 
     useEffect(() => {
       let cancelled = false;
@@ -1411,26 +1454,58 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
           ))}
         </div>
 
-        {/* 툴 토글 */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <EditToolButton icon="↩️" label="되돌리기" onClick={undo} disabled={!hasEdits} />
-          <EditToolButton
-            icon="✨"
-            label="스티커"
-            active={tool === "sticker"}
-            onClick={() => {
-              setTool((t) => (t === "sticker" ? "none" : "sticker"));
-            }}
-          />
-          <EditToolButton
-            icon="✏️"
-            label="브러시"
-            active={tool === "brush"}
-            onClick={() => {
-              setTool((t) => (t === "brush" ? "none" : "brush"));
-              setSelectedId(null);
-            }}
-          />
+        {/* 툴 토글 — edit_toolbar 에셋(1x3 크림 바) 위에 셀별로 아이콘+글자 오버레이 */}
+        <div className="relative mt-3 w-full select-none">
+          <img src={toolbarBar} alt="" draggable={false} className="w-full select-none" />
+          {[
+            {
+              icon: "↩️",
+              label: "되돌리기",
+              active: false,
+              disabled: !hasEdits,
+              onClick: undo,
+            },
+            {
+              icon: "✨",
+              label: "스티커",
+              active: tool === "sticker",
+              disabled: false,
+              onClick: () => setTool((t) => (t === "sticker" ? "none" : "sticker")),
+            },
+            {
+              icon: "✏️",
+              label: "브러시",
+              active: tool === "brush",
+              disabled: false,
+              onClick: () => {
+                setTool((t) => (t === "brush" ? "none" : "brush"));
+                setSelectedId(null);
+              },
+            },
+          ].map((b, i) => (
+            <button
+              key={b.label}
+              onClick={b.onClick}
+              disabled={b.disabled}
+              aria-label={b.label}
+              className={`absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-0.5 rounded-2xl font-display font-extrabold leading-none transition active:scale-95 disabled:opacity-40 ${
+                b.active ? "text-primary" : "text-[#9c5a3c]"
+              }`}
+              style={{
+                left: `${TOOLBAR_CELL_CX[i] * 100}%`,
+                top: "50%",
+                width: "26%",
+                height: "82%",
+                fontSize: "clamp(11px, 3.2vw, 15px)",
+                ...(b.active
+                  ? { filter: "drop-shadow(0 0 6px rgba(196,74,120,0.55))" }
+                  : null),
+              }}
+            >
+              <span style={{ fontSize: "1.5em" }}>{b.icon}</span>
+              {b.label}
+            </button>
+          ))}
         </div>
 
         {tool === "sticker" && (
@@ -1513,35 +1588,6 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
     );
   },
 );
-
-function EditToolButton({
-  icon,
-  label,
-  active,
-  disabled,
-  onClick,
-}: {
-  icon: string;
-  label: string;
-  active?: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`flex flex-col items-center gap-0.5 rounded-2xl px-2 py-2.5 text-sm font-bold ring-1 transition active:scale-95 disabled:opacity-40 ${
-        active
-          ? "bg-primary text-primary-foreground ring-primary"
-          : "bg-card text-foreground ring-border"
-      }`}
-    >
-      <span className="text-lg">{icon}</span>
-      {label}
-    </button>
-  );
-}
 
 function ResultScreen({
   frameKey,
