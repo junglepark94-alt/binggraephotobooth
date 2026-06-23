@@ -71,11 +71,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+      },
       { title: "빙그레 네컷 — 빙그레 왕국 여름 축제" },
       {
         name: "description",
-        content: "빙그레 왕국 여름 축제에서 즐기는 인생네컷. 프레임을 골라 브라우저에서 바로 찍어보세요.",
+        content:
+          "빙그레 왕국 여름 축제에서 즐기는 인생네컷. 프레임을 골라 브라우저에서 바로 찍어보세요.",
       },
       { property: "og:title", content: "빙그레 네컷" },
       { property: "og:description", content: "빙그레 왕국 여름 축제에서 즐기는 인생네컷" },

@@ -188,14 +188,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen text-foreground">
-      <div className="mx-auto w-full max-w-md px-5 pb-10 pt-8 md:max-w-3xl lg:max-w-6xl md:px-8 md:pt-12">
-        {step !== "main" &&
-          step !== "letter" &&
-          step !== "map" &&
-          step !== "select" &&
-          step !== "shoot" &&
-          step !== "result" && <FestivalHeader />}
+    <div className="min-h-[100dvh] text-foreground">
+      <div className="mx-auto w-full max-w-md px-0 pb-0 pt-0 md:max-w-3xl lg:max-w-6xl md:px-8 md:pb-10 md:pt-12">
         {step === "main" && <MainScreen onStart={() => setStep("letter")} />}
         {step === "letter" && (
           <LetterScreen onBack={() => setStep("main")} onNext={() => setStep("map")} />
@@ -252,15 +246,6 @@ function App() {
   );
 }
 
-function FestivalHeader() {
-  return (
-    <div className="mb-6 flex flex-col items-center text-center">
-      <div className="ribbon-title text-lg md:text-xl">🍦 빙그레 네컷 🍦</div>
-      <p className="mt-2 font-hand text-base text-muted-foreground">빙그레 왕국 여름 축제</p>
-    </div>
-  );
-}
-
 // 공통 이미지 버튼 (button_trim.png — 핑크 알약 + 우측 아이스크림). 글자는 오버레이.
 function ImageButton({
   onClick,
@@ -309,8 +294,8 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
   }, [leaving, onNext]);
 
   return (
-    <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
-      <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
+    <div className="mx-auto flex min-h-[100dvh] md:min-h-[90vh] max-w-md flex-col">
+      <div className="relative flex-1 overflow-hidden rounded-none md:rounded-3xl md:ring-1 md:ring-border">
         {/* 메인과 동일한 배경 */}
         <img src={mainBg} alt="" className="absolute inset-0 h-full w-full object-cover" />
 
@@ -662,8 +647,8 @@ function FestivalMap({
   };
 
   return (
-    <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
-      <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
+    <div className="mx-auto flex min-h-[100dvh] md:min-h-[90vh] max-w-md flex-col">
+      <div className="relative flex-1 overflow-hidden rounded-none md:rounded-3xl md:ring-1 md:ring-border">
         {/* 축제 배경 일러스트 */}
         <img
           src={festivalBg}
@@ -811,8 +796,8 @@ function Hotspot({
 //   한 줄로 바꾸면 된다. (타이틀·캐릭터는 이미지에 포함되어 있으므로 버튼만 오버레이)
 function MainScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
-      <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
+    <div className="mx-auto flex min-h-[100dvh] md:min-h-[90vh] max-w-md flex-col">
+      <div className="relative flex-1 overflow-hidden rounded-none md:rounded-3xl md:ring-1 md:ring-border">
         <img
           src={mainBg}
           alt="빙그레 왕국"
@@ -861,7 +846,7 @@ function MainScreen({ onStart }: { onStart: () => void }) {
 function FestivalSelectBg({ onBack, children }: { onBack?: () => void; children: ReactNode }) {
   return (
     <div
-      className="relative mx-auto max-w-md overflow-hidden rounded-3xl ring-1 ring-border"
+      className="relative mx-auto max-w-md overflow-hidden rounded-none md:rounded-3xl md:ring-1 md:ring-border"
       style={{
         backgroundColor: "#b5e3fe",
         backgroundImage: "radial-gradient(rgba(255,255,255,0.4) 2px, transparent 2.5px)",
@@ -2185,8 +2170,8 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
 // 축제 종료 화면 — 노을 진 왕국 배경 + 안내 다이얼로그 + 하단 타이틀.
 function EndScreen({ onRestart }: { onRestart: () => void }) {
   return (
-    <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
-      <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
+    <div className="mx-auto flex min-h-[100dvh] md:min-h-[90vh] max-w-md flex-col">
+      <div className="relative flex-1 overflow-hidden rounded-none md:rounded-3xl md:ring-1 md:ring-border">
         <img
           src={endBg}
           alt="노을이 진 빙그레 왕국"
