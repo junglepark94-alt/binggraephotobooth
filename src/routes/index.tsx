@@ -486,9 +486,9 @@ const NAV_ICONS: {
   dstCx: number;
   h: number;
 }[] = [
-  { key: "photo", label: "사진", src: navIconPhoto, dstCx: 0.2, h: 92 },
-  { key: "clover", label: "클로버", src: navIconClover, dstCx: 0.4, h: 92 },
-  { key: "candy", label: "아이스크림", src: navIconCandy, dstCx: 0.6, h: 92 },
+  { key: "photo", label: "사진", src: navIconPhoto, dstCx: 0.2, h: 74 },
+  { key: "clover", label: "클로버", src: navIconClover, dstCx: 0.4, h: 74 },
+  { key: "candy", label: "아이스크림", src: navIconCandy, dstCx: 0.6, h: 74 },
   { key: "heart", label: "하트", src: navIconHeart, dstCx: 0.8, h: 64 },
 ];
 
