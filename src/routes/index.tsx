@@ -846,7 +846,7 @@ function MainScreen({ onStart }: { onStart: () => void }) {
 function FestivalSelectBg({ onBack, children }: { onBack?: () => void; children: ReactNode }) {
   return (
     <div
-      className="relative mx-auto max-w-md overflow-hidden rounded-none md:rounded-3xl md:ring-1 md:ring-border"
+      className="relative mx-auto min-h-[100dvh] max-w-md overflow-hidden rounded-none md:min-h-0 md:rounded-3xl md:ring-1 md:ring-border"
       style={{
         backgroundColor: "#b5e3fe",
         backgroundImage: "radial-gradient(rgba(255,255,255,0.4) 2px, transparent 2.5px)",

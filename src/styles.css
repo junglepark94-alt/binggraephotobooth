@@ -157,7 +157,9 @@
       24px 24px;
     background-repeat: no-repeat, no-repeat, no-repeat, repeat;
     background-attachment: fixed;
-    min-height: 100vh;
+    /* 모바일 동적 뷰포트에 맞춰 — 100vh는 주소창 높이만큼 더 커서 위아래로 배경이 새던 문제 방지 */
+    min-height: 100dvh;
+    overscroll-behavior: none;
   }
 }
 
