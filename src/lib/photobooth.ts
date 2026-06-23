@@ -163,8 +163,7 @@ export async function composeStrip(opts: {
   c.width = frame.naturalWidth;
   c.height = frame.naturalHeight;
   const ctx = c.getContext("2d")!;
-  ctx.fillStyle = "#fdf9ee";
-  ctx.fillRect(0, 0, c.width, c.height);
+  // 배경은 채우지 않는다 — 프레임 바깥은 투명하게 두어 에셋대로 저장/공유되도록.
 
   for (let i = 0; i < slots.length; i++) {
     const s = slots[i];
