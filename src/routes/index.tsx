@@ -35,6 +35,7 @@ import selectNote from "@/assets/select_note.png";
 import editToolbar from "@/assets/edit_toolbar.png";
 import resultActions from "@/assets/result_actions.png";
 import backButton from "@/assets/back_button.png";
+import fortuneButton from "@/assets/fortune_button.png";
 import festivalBg from "@/assets/festival_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
 import navIconPhoto from "@/assets/nav_icon_photo.png";
@@ -55,16 +56,62 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "빙그레 네컷 — 인생네컷 포토부스" },
-      { name: "description", content: "빙그레 프레임을 골라 브라우저에서 바로 네 컷을 찍어보세요." },
+      {
+        name: "description",
+        content: "빙그레 프레임을 골라 브라우저에서 바로 네 컷을 찍어보세요.",
+      },
     ],
   }),
 });
 
-const FRAMES: Record<FrameKey, { name: string; subtitle: string; frame: string; overlay: string; overlays: string[]; tint: string }> = {
-  white: { name: "White", subtitle: "두 왕국이 함께 나누게 된 부드럽고 포근한 아이스크림 프레임", frame: frameWhite, overlay: overlayWhite, overlays: [overlayWhite, overlayWhite, overlayWhite, overlayWhite], tint: "from-slate-100 to-white" },
-  brown: { name: "Brown", subtitle: "두 왕국을 가로질러 모인 클래식한 디저트와 진하고 따뜻한 과자의 풍미를 담은 프레임", frame: frameBrown, overlay: overlayBrown, overlays: [overlayBrown, overlayBrown, overlayBrown, overlayBrown], tint: "from-amber-200 to-stone-300" },
-  skyblue: { name: "Skyblue", subtitle: "더 넓어진 왕국에서 함께 즐기는 시원한 아이스크림의 산뜻함이 묻어나는 프레임", frame: frameSkyblue, overlay: overlaySkyblue, overlays: [overlaySkyblue, overlaySkyblue, overlaySkyblue, overlaySkyblue], tint: "from-sky-200 to-blue-100" },
-  binggraeus: { name: "Binggraeus", subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임", frame: frameBinggraeus, overlay: overlayBinggraeus, overlays: [overlayBinggraeusSlot1, overlayBinggraeusSlot2, overlayBinggraeusSlot3, overlayBinggraeusSlot4], tint: "from-rose-300 to-amber-200" },
+const FRAMES: Record<
+  FrameKey,
+  {
+    name: string;
+    subtitle: string;
+    frame: string;
+    overlay: string;
+    overlays: string[];
+    tint: string;
+  }
+> = {
+  white: {
+    name: "White",
+    subtitle: "두 왕국이 함께 나누게 된 부드럽고 포근한 아이스크림 프레임",
+    frame: frameWhite,
+    overlay: overlayWhite,
+    overlays: [overlayWhite, overlayWhite, overlayWhite, overlayWhite],
+    tint: "from-slate-100 to-white",
+  },
+  brown: {
+    name: "Brown",
+    subtitle: "두 왕국을 가로질러 모인 클래식한 디저트와 진하고 따뜻한 과자의 풍미를 담은 프레임",
+    frame: frameBrown,
+    overlay: overlayBrown,
+    overlays: [overlayBrown, overlayBrown, overlayBrown, overlayBrown],
+    tint: "from-amber-200 to-stone-300",
+  },
+  skyblue: {
+    name: "Skyblue",
+    subtitle: "더 넓어진 왕국에서 함께 즐기는 시원한 아이스크림의 산뜻함이 묻어나는 프레임",
+    frame: frameSkyblue,
+    overlay: overlaySkyblue,
+    overlays: [overlaySkyblue, overlaySkyblue, overlaySkyblue, overlaySkyblue],
+    tint: "from-sky-200 to-blue-100",
+  },
+  binggraeus: {
+    name: "Binggraeus",
+    subtitle: "아이스크림 왕국, 두 왕국의 특별한 만남을 기념하는 왕실 프레임",
+    frame: frameBinggraeus,
+    overlay: overlayBinggraeus,
+    overlays: [
+      overlayBinggraeusSlot1,
+      overlayBinggraeusSlot2,
+      overlayBinggraeusSlot3,
+      overlayBinggraeusSlot4,
+    ],
+    tint: "from-rose-300 to-amber-200",
+  },
 };
 
 type Step = "main" | "letter" | "map" | "select" | "shoot" | "result" | "draw" | "end";
@@ -116,7 +163,10 @@ function useFramePreviews() {
           const fid = fctx.getImageData(0, 0, fc.width, fc.height);
           const fd = fid.data;
           for (let i = 0; i < fd.length; i += 4) {
-            const r = fd[i], g = fd[i + 1], b = fd[i + 2], a = fd[i + 3];
+            const r = fd[i],
+              g = fd[i + 1],
+              b = fd[i + 2],
+              a = fd[i + 3];
             if (a > 128 && g > 180 && r < 120 && b < 120 && g > r + 80 && g > b + 80) {
               fd[i + 3] = 0;
             }
@@ -130,7 +180,9 @@ function useFramePreviews() {
       if (cancelled) return;
       setPreviews(Object.fromEntries(entries));
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
   return previews;
 }
@@ -182,24 +234,32 @@ function App() {
           <ShootScreen
             frameKey={frameKey}
             onBack={() => setStep("select")}
-            onDone={(s) => { setShots(s); setInv((v) => ({ ...v, photo: true })); setStep("result"); }}
+            onDone={(s) => {
+              setShots(s);
+              setInv((v) => ({ ...v, photo: true }));
+              setStep("result");
+            }}
           />
         )}
         {step === "result" && frameKey && (
           <ResultScreen
             frameKey={frameKey}
             shots={shots}
-            onRetake={() => { setShots([]); setStep("shoot"); }}
-            onChangeFrame={() => { setShots([]); setStep("select"); }}
+            onRetake={() => {
+              setShots([]);
+              setStep("shoot");
+            }}
+            onChangeFrame={() => {
+              setShots([]);
+              setStep("select");
+            }}
             onBackToMap={() => setStep("map")}
           />
         )}
         {step === "draw" && (
           <DrawScreen onBack={() => setStep("map")} onEnd={() => setStep("end")} />
         )}
-        {step === "end" && (
-          <EndScreen onRestart={restart} />
-        )}
+        {step === "end" && <EndScreen onRestart={restart} />}
       </div>
     </div>
   );
@@ -225,7 +285,10 @@ function ImageButton({
   textClassName?: string;
 }) {
   return (
-    <button onClick={onClick} className="relative block w-full max-w-[330px] transition active:scale-95">
+    <button
+      onClick={onClick}
+      className="relative block w-full max-w-[330px] transition active:scale-95"
+    >
       <img src={btnImg} alt="" draggable={false} className="w-full select-none" />
       <span
         className={`absolute inset-0 flex items-center justify-center font-display font-extrabold text-white ${textClassName}`}
@@ -275,7 +338,9 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
               />
               <div className="icecream-shadow" />
             </div>
-            <p className="mt-6 font-hand text-lg font-bold text-white drop-shadow">빙그레 축제로 이동 중…</p>
+            <p className="mt-6 font-hand text-lg font-bold text-white drop-shadow">
+              빙그레 축제로 이동 중…
+            </p>
           </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-4">
@@ -299,7 +364,11 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
                 <p>축제 속 숨겨진 이벤트와 추억을 함께 남겨보세요. ✨</p>
               </div>
             </div>
-            <ImageButton onClick={() => setLeaving(true)} label="축제 즐기러 가기" textClassName="text-xl" />
+            <ImageButton
+              onClick={() => setLeaving(true)}
+              label="축제 즐기러 가기"
+              textClassName="text-xl"
+            />
           </div>
         )}
       </div>
@@ -368,6 +437,13 @@ const RESULT_ACTIONS_CELLS = [
 
 // 풀폭 버튼(축제로 돌아가기) — 단일 셀, 중앙 오버레이.
 const BACK_BTN_CROP: Crop = { x0: 0.01, y0: 0.05, x1: 0.99, y1: 0.95 };
+
+// 1x2 버튼 그리드(축제로 / 축제 마치기). 셀 중심은 크롭 박스 기준.
+const FORTUNE_BTN_CROP: Crop = { x0: 0.05, y0: 0.42, x1: 0.95, y1: 0.76 };
+const FORTUNE_BTN_CELLS = [
+  { cx: 0.253, cy: 0.47 },
+  { cx: 0.746, cy: 0.47 },
+];
 
 function useKeyedCrop(src: string, crop: Crop): string {
   const [out, setOut] = useState(src);
@@ -676,7 +752,11 @@ function MainScreen({ onStart }: { onStart: () => void }) {
   return (
     <div className="mx-auto flex min-h-[90vh] max-w-md flex-col">
       <div className="relative flex-1 overflow-hidden rounded-3xl ring-1 ring-border">
-        <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={mainBg}
+          alt="빙그레 왕국"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
 
         {/* 타이틀 로고 오버레이 (logo.png — 투명 배경) + 리본 곡선에 부제 */}
         <div className="absolute inset-x-0 top-[3%] flex justify-center">
@@ -839,7 +919,6 @@ function WindowDialog({ onClose, children }: { onClose?: () => void; children: R
   );
 }
 
-
 // 프레임 선택 (스토리보드) — 축제 배경 + 크림 카드 리스트 + 캔디 버튼 + 안내 노트
 function SelectScreen({
   value,
@@ -908,22 +987,6 @@ function SelectScreen({
         </span>
       </div>
     </FestivalSelectBg>
-  );
-}
-
-function Header({ title, onBack }: { title: string; onBack?: () => void }) {
-  return (
-    <div className="flex items-center gap-3">
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="rounded-full bg-secondary px-4 py-1.5 text-sm font-bold text-secondary-foreground shadow-sm ring-1 ring-border transition active:scale-95"
-        >
-          ← 뒤로
-        </button>
-      )}
-      <h2 className="text-2xl font-bold text-primary">{title}</h2>
-    </div>
   );
 }
 
@@ -1192,13 +1255,29 @@ function ShootScreen({
 // 좌표·크기는 모두 이미지 대비 비율(0~1)로 저장 → 화면 표시와 PNG 내보내기가 정확히 일치.
 
 const STICKERS = ["❤️", "⭐", "🎀", "👑", "🌸", "🍦", "🫧", "🐰", "🍓", "✨", "🎈", "🧁"];
-const BRUSH_COLORS = ["#ff5d8f", "#ff8fab", "#ffd166", "#06d6a0", "#7bdff2", "#9b5de5", "#ffffff", "#3a3a3a"];
+const BRUSH_COLORS = [
+  "#ff5d8f",
+  "#ff8fab",
+  "#ffd166",
+  "#06d6a0",
+  "#7bdff2",
+  "#9b5de5",
+  "#ffffff",
+  "#3a3a3a",
+];
 const BRUSH_SIZES = [0.006, 0.013, 0.024]; // 선 굵기 (이미지 너비 대비 비율)
 const DEFAULT_STICKER_SIZE = 0.16;
 
 type Pt = { fx: number; fy: number };
 type Stroke = { color: string; widthFrac: number; points: Pt[]; order: number };
-type StickerItem = { id: string; char: string; fx: number; fy: number; sizeFrac: number; order: number };
+type StickerItem = {
+  id: string;
+  char: string;
+  fx: number;
+  fy: number;
+  sizeFrac: number;
+  order: number;
+};
 type EditorTool = "none" | "sticker" | "brush";
 export type EditorHandle = { exportPng: () => string };
 
@@ -1248,7 +1327,8 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
       ctx.lineJoin = "round";
       ctx.beginPath();
       ctx.moveTo(st.points[0].fx * width, st.points[0].fy * height);
-      for (let i = 1; i < st.points.length; i++) ctx.lineTo(st.points[i].fx * width, st.points[i].fy * height);
+      for (let i = 1; i < st.points.length; i++)
+        ctx.lineTo(st.points[i].fx * width, st.points[i].fy * height);
       ctx.stroke();
     };
 
@@ -1289,7 +1369,10 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
     // ── 브러시 ──
     const ptFrom = (e: ReactPointerEvent): Pt => {
       const r = canvasRef.current!.getBoundingClientRect();
-      return { fx: clamp01((e.clientX - r.left) / r.width), fy: clamp01((e.clientY - r.top) / r.height) };
+      return {
+        fx: clamp01((e.clientX - r.left) / r.width),
+        fy: clamp01((e.clientY - r.top) / r.height),
+      };
     };
     const brushDown = (e: ReactPointerEvent) => {
       if (tool !== "brush") return;
@@ -1335,7 +1418,10 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
     const addSticker = (char: string) => {
       const order = nextOrder();
       const id = `s${order}`;
-      setStickers((a) => [...a, { id, char, fx: 0.5, fy: 0.5, sizeFrac: DEFAULT_STICKER_SIZE, order }]);
+      setStickers((a) => [
+        ...a,
+        { id, char, fx: 0.5, fy: 0.5, sizeFrac: DEFAULT_STICKER_SIZE, order },
+      ]);
       setSelectedId(id);
     };
     const removeSticker = (id: string) => {
@@ -1344,7 +1430,11 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
     };
     const resizeSticker = (d: number) => {
       setStickers((a) =>
-        a.map((s) => (s.id === selectedId ? { ...s, sizeFrac: Math.max(0.05, Math.min(0.5, s.sizeFrac + d)) } : s)),
+        a.map((s) =>
+          s.id === selectedId
+            ? { ...s, sizeFrac: Math.max(0.05, Math.min(0.5, s.sizeFrac + d)) }
+            : s,
+        ),
       );
     };
     const stickerDown = (e: ReactPointerEvent, s: StickerItem) => {
@@ -1372,7 +1462,8 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
       if (maxSticker < 0 && maxStroke < 0) return;
       if (maxSticker > maxStroke) {
         setStickers((a) => a.filter((s) => s.order !== maxSticker));
-        if (selectedId && stickers.find((s) => s.order === maxSticker)?.id === selectedId) setSelectedId(null);
+        if (selectedId && stickers.find((s) => s.order === maxSticker)?.id === selectedId)
+          setSelectedId(null);
       } else {
         setStrokes((a) => a.filter((s) => s.order !== maxStroke));
       }
@@ -1388,7 +1479,11 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
             if (tool !== "brush" && e.target === e.currentTarget) setSelectedId(null);
           }}
           className="relative mx-auto overflow-hidden rounded-2xl ring-1 ring-border"
-          style={{ aspectRatio: `${width} / ${height}`, containerType: "inline-size", background: "#fdf9ee" }}
+          style={{
+            aspectRatio: `${width} / ${height}`,
+            containerType: "inline-size",
+            background: "#fdf9ee",
+          }}
         >
           <img
             src={src}
@@ -1402,7 +1497,11 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
             width={width}
             height={height}
             className="absolute inset-0 h-full w-full"
-            style={{ zIndex: 1, pointerEvents: tool === "brush" ? "auto" : "none", touchAction: "none" }}
+            style={{
+              zIndex: 1,
+              pointerEvents: tool === "brush" ? "auto" : "none",
+              touchAction: "none",
+            }}
             onPointerDown={brushDown}
             onPointerMove={brushMove}
             onPointerUp={brushUp}
@@ -1486,9 +1585,7 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
                 width: "26%",
                 height: "82%",
                 fontSize: "clamp(11px, 3.2vw, 15px)",
-                ...(b.active
-                  ? { filter: "drop-shadow(0 0 6px rgba(196,74,120,0.55))" }
-                  : null),
+                ...(b.active ? { filter: "drop-shadow(0 0 6px rgba(196,74,120,0.55))" } : null),
               }}
             >
               <span style={{ fontSize: "1.5em" }}>{b.icon}</span>
@@ -1565,7 +1662,10 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
                     style={{
                       width: `${6 + i * 5}px`,
                       height: `${6 + i * 5}px`,
-                      background: sizeIdx === i ? "var(--color-primary-foreground)" : "var(--color-muted-foreground)",
+                      background:
+                        sizeIdx === i
+                          ? "var(--color-primary-foreground)"
+                          : "var(--color-muted-foreground)",
                     }}
                   />
                 </button>
@@ -1627,7 +1727,9 @@ function ResultScreen({
         if (detected.length < 4) {
           console.warn("green slot detection failed, using fallback layout", detected);
           usedSlots = fallbackSlots(frameImg);
-          setError(`플레이스홀더 슬롯이 ${detected.length}/4 개만 감지되어 기본 레이아웃을 사용합니다.`);
+          setError(
+            `플레이스홀더 슬롯이 ${detected.length}/4 개만 감지되어 기본 레이아웃을 사용합니다.`,
+          );
         }
         const url = await composeStrip({
           frame: frameImg,
@@ -1645,7 +1747,9 @@ function ResultScreen({
         setError(`오류가 발생했습니다: ${(e as Error).message}`);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [frameKey, shots, f.frame, f.overlay]);
 
   const save = () => {
@@ -1768,16 +1872,72 @@ function ResultScreen({
 type Fortune = { name: string; emoji: string; luck: number; message: string };
 
 const FORTUNES: Fortune[] = [
-  { name: "부라보", emoji: "🍦", luck: 100, message: "오늘 하루 부라브라보 할 일이 가득하겠어요. 당신의 자신감이 멋진 결과를 만들어낼 거예요!" },
-  { name: "팽이팽이", emoji: "🌀", luck: 90, message: "팽팽 돌듯 다양한 기회가 찾아와요! 새로운 시도가 행운의 방향을 바꿔줄 거예요. 두근두근~" },
-  { name: "누가바", emoji: "🍫", luck: 85, message: "고소한 누가처럼 당신의 진심이 누군가의 마음을 녹일 거예요. 용기를 내 먼저 얘기해 보세요. 진심을 알아줄 거예요." },
-  { name: "호두마루", emoji: "🥜", luck: 80, message: "호두처럼 묵묵히 쌓아온 노력의 결실을 맛볼 때예요!" },
-  { name: "투게더", emoji: "🍨", luck: 78, message: "함께라서 더 행복한 하루! 소중한 사람들과의 시간이 큰 행운을 가져다줘요." },
-  { name: "젤루조아", emoji: "🍊", luck: 72, message: "그 동안 안 풀리던 일이 감귤의 깔끔하고 상쾌한 맛처럼 시원한 하루가 되겠어요." },
-  { name: "요맘때", emoji: "🍧", luck: 70, message: "지친 마음에 달콤한 휴식이 필요해요. 가끔은 나를 위한 시간을 가져보세요. 새로운 에너지를 충전하면 더 좋은 일이 생길 거예요!" },
-  { name: "비비빅", emoji: "🍡", luck: 69, message: "막혔던 일이 시원하게 해결되고, 기분 좋은 전환점이 찾아올 거예요." },
-  { name: "바밤바", emoji: "🌰", luck: 60, message: "밤의 부드럽고 포슬함처럼 오늘 하루 조금 느려서 답답할 수도 있지만, 곧 좋은 소식이 기다리고 있겠어요!" },
-  { name: "메로나", emoji: "🍈", luck: 50, message: "주변이 시끄러운 하루일 수 있어요. 오늘은 메론 본연의 맛이 담긴 메로나를 먹으면서 적당한 휴식이 필요한 날이겠어요." },
+  {
+    name: "부라보",
+    emoji: "🍦",
+    luck: 100,
+    message:
+      "오늘 하루 부라브라보 할 일이 가득하겠어요. 당신의 자신감이 멋진 결과를 만들어낼 거예요!",
+  },
+  {
+    name: "팽이팽이",
+    emoji: "🌀",
+    luck: 90,
+    message:
+      "팽팽 돌듯 다양한 기회가 찾아와요! 새로운 시도가 행운의 방향을 바꿔줄 거예요. 두근두근~",
+  },
+  {
+    name: "누가바",
+    emoji: "🍫",
+    luck: 85,
+    message:
+      "고소한 누가처럼 당신의 진심이 누군가의 마음을 녹일 거예요. 용기를 내 먼저 얘기해 보세요. 진심을 알아줄 거예요.",
+  },
+  {
+    name: "호두마루",
+    emoji: "🥜",
+    luck: 80,
+    message: "호두처럼 묵묵히 쌓아온 노력의 결실을 맛볼 때예요!",
+  },
+  {
+    name: "투게더",
+    emoji: "🍨",
+    luck: 78,
+    message: "함께라서 더 행복한 하루! 소중한 사람들과의 시간이 큰 행운을 가져다줘요.",
+  },
+  {
+    name: "젤루조아",
+    emoji: "🍊",
+    luck: 72,
+    message: "그 동안 안 풀리던 일이 감귤의 깔끔하고 상쾌한 맛처럼 시원한 하루가 되겠어요.",
+  },
+  {
+    name: "요맘때",
+    emoji: "🍧",
+    luck: 70,
+    message:
+      "지친 마음에 달콤한 휴식이 필요해요. 가끔은 나를 위한 시간을 가져보세요. 새로운 에너지를 충전하면 더 좋은 일이 생길 거예요!",
+  },
+  {
+    name: "비비빅",
+    emoji: "🍡",
+    luck: 69,
+    message: "막혔던 일이 시원하게 해결되고, 기분 좋은 전환점이 찾아올 거예요.",
+  },
+  {
+    name: "바밤바",
+    emoji: "🌰",
+    luck: 60,
+    message:
+      "밤의 부드럽고 포슬함처럼 오늘 하루 조금 느려서 답답할 수도 있지만, 곧 좋은 소식이 기다리고 있겠어요!",
+  },
+  {
+    name: "메로나",
+    emoji: "🍈",
+    luck: 50,
+    message:
+      "주변이 시끄러운 하루일 수 있어요. 오늘은 메론 본연의 맛이 담긴 메로나를 먹으면서 적당한 휴식이 필요한 날이겠어요.",
+  },
 ];
 
 function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }) {
@@ -1785,6 +1945,8 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
   const scratchingRef = useRef(false);
   const [revealed, setRevealed] = useState(false);
   const fortune = useMemo(() => FORTUNES[Math.floor(Math.random() * FORTUNES.length)], []);
+  const noteSrc = useWhiteKeyed(selectNote);
+  const fortuneBar = useKeyedCrop(fortuneButton, FORTUNE_BTN_CROP);
 
   const W = 600;
   const H = 360;
@@ -1858,53 +2020,84 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
   };
 
   return (
-    <div className="mx-auto max-w-md">
-      <Header title="아이스크림 뽑기" onBack={onBack} />
-      <p className="mt-3 text-center text-sm text-muted-foreground">
-        전설의 클로버로 오늘의 아이스크림 운세를 뽑아보세요!
-      </p>
-      <div
-        className="festival-card relative mt-4 overflow-hidden"
-        style={{ aspectRatio: `${W} / ${H}`, padding: 0 }}
-      >
-        {/* 공개될 운세 (스크래치 아래) */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-6 text-center">
-          <div className="text-7xl">{fortune.emoji}</div>
-          <div className="mt-1 text-2xl font-bold text-primary">{fortune.name}</div>
-          <div className="text-xs font-bold text-muted-foreground">행운지수 {fortune.luck}%</div>
-          <div className="mt-1 h-2.5 w-44 overflow-hidden rounded-full bg-secondary/50 ring-1 ring-border">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${fortune.luck}%` }} />
+    <FestivalSelectBg onBack={onBack}>
+      <div className="space-y-3 px-3 pb-6 pt-1">
+        <h2 className="text-center font-display text-lg font-extrabold text-primary drop-shadow-sm">
+          아이스크림 뽑기
+        </h2>
+        <WindowPanel onClose={onBack}>
+          <p className="mb-2 text-center text-xs text-muted-foreground">
+            전설의 클로버로 오늘의 아이스크림 운세를 뽑아보세요!
+          </p>
+          <div
+            className="relative mx-auto overflow-hidden rounded-2xl ring-1 ring-border"
+            style={{ aspectRatio: `${W} / ${H}`, maxWidth: 300 }}
+          >
+            {/* 공개될 운세 (스크래치 아래) */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-6 text-center">
+              <div className="text-6xl">{fortune.emoji}</div>
+              <div className="mt-1 text-2xl font-bold text-primary">{fortune.name}</div>
+              <div className="text-xs font-bold text-muted-foreground">
+                행운지수 {fortune.luck}%
+              </div>
+              <div className="mt-1 h-2.5 w-44 overflow-hidden rounded-full bg-secondary/50 ring-1 ring-border">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${fortune.luck}%` }}
+                />
+              </div>
+            </div>
+            {/* 스크래치 표면 */}
+            <canvas
+              ref={canvasRef}
+              width={W}
+              height={H}
+              onPointerDown={onDown}
+              onPointerMove={onMove}
+              onPointerUp={onUp}
+              onPointerCancel={onUp}
+              className={`absolute inset-0 h-full w-full transition-opacity duration-500 ${revealed ? "pointer-events-none opacity-0" : "cursor-pointer opacity-100"}`}
+              style={{ touchAction: "none" }}
+            />
           </div>
-        </div>
-        {/* 스크래치 표면 */}
-        <canvas
-          ref={canvasRef}
-          width={W}
-          height={H}
-          onPointerDown={onDown}
-          onPointerMove={onMove}
-          onPointerUp={onUp}
-          onPointerCancel={onUp}
-          className={`absolute inset-0 h-full w-full transition-opacity duration-500 ${revealed ? "pointer-events-none opacity-0" : "cursor-pointer opacity-100"}`}
-          style={{ touchAction: "none" }}
-        />
-      </div>
+        </WindowPanel>
 
-      {revealed && (
-        <div className="festival-card mt-4 p-5 text-center">
-          <p className="text-[15px] leading-relaxed">{fortune.message}</p>
-        </div>
-      )}
+        {/* 운세 결과 메시지 — select_note 위 글자 오버레이 */}
+        {revealed && (
+          <div className="relative mx-auto w-[96%] max-w-[360px]">
+            <img src={noteSrc} alt="" draggable={false} className="w-full select-none" />
+            <span className="absolute inset-0 flex items-center justify-center px-[13%] text-center font-medium leading-snug text-amber-900/85">
+              <span style={{ fontSize: "clamp(11px, 3vw, 14px)" }}>{fortune.message}</span>
+            </span>
+          </div>
+        )}
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <button onClick={onBack} className="candy-btn-mint candy-btn px-4 py-3">
-          ← 축제로
-        </button>
-        <button onClick={onEnd} className="candy-btn px-4 py-3">
-          🌅 축제 마치기
-        </button>
+        {/* 축제로 / 축제 마치기 — fortune_button(1x2 그리드) 위 오버레이 */}
+        <div className="relative w-full select-none">
+          <img src={fortuneBar} alt="" draggable={false} className="w-full select-none" />
+          {[
+            { label: "← 축제로", onClick: onBack },
+            { label: "🌅 축제 마치기", onClick: onEnd },
+          ].map((b, i) => (
+            <button
+              key={b.label}
+              onClick={b.onClick}
+              aria-label={b.label}
+              className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl text-center font-display font-extrabold leading-tight text-[#9c5a3c] transition active:scale-95"
+              style={{
+                left: `${FORTUNE_BTN_CELLS[i].cx * 100}%`,
+                top: `${FORTUNE_BTN_CELLS[i].cy * 100}%`,
+                width: "40%",
+                height: "60%",
+                fontSize: "clamp(13px, 3.6vw, 16px)",
+              }}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </FestivalSelectBg>
   );
 }
 
