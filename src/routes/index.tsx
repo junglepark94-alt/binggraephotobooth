@@ -2278,7 +2278,7 @@ function EndScreen({ onRestart }: { onRestart: () => void }) {
                 <p className="font-display text-[15px] font-extrabold leading-relaxed text-foreground">
                   하나의 왕국이 된 빙그레,
                   <br />
-                  아이스크림 축제를 모두 즐겼어요. 🌇
+                  아이스크림 축제를 모두 즐겼어요.
                 </p>
                 <SelectButton onClick={onRestart} label="처음으로" className="mt-4" />
               </div>
