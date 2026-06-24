@@ -805,7 +805,7 @@ function FestivalMap({
               빙그레 왕국 여름축제에 온 걸 환영해!
               <br />
               화면의{" "}
-              <span className="mx-0.5 inline-grid h-5 w-5 translate-y-0.5 place-items-center rounded-full bg-primary text-xs font-extrabold text-primary-foreground shadow">
+              <span className="mx-0.5 -mt-0.5 inline-grid h-5 w-5 place-items-center rounded-full bg-primary align-middle text-xs font-extrabold text-primary-foreground shadow">
                 !
               </span>{" "}
               표시들을 하나씩 눌러봐.
