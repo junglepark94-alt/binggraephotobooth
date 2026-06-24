@@ -19,20 +19,20 @@ export function EndScreen({ onRestart }: { onRestart: () => void }) {
           <div className="relative w-[95%] max-w-none">
             <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
             <svg
-              viewBox="0 0 929 538"
+              viewBox="0 0 1536 1024"
               preserveAspectRatio="xMidYMid meet"
               className="pointer-events-none absolute inset-0 h-full w-full"
               aria-hidden="true"
             >
               <defs>
-                <path id="endRibbonPath" d="M 148 450 Q 464 408 780 450" fill="none" />
+                <path id="endRibbonPath" d="M 250 762 Q 768 712 1286 762" fill="none" />
               </defs>
               <text
                 textAnchor="middle"
                 fill="#b14a72"
                 fontWeight={700}
                 fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
-                fontSize={30}
+                fontSize={50}
               >
                 <textPath href="#endRibbonPath" startOffset="50%">
                   오늘도 맛있는 즐거움이 가득한 곳
