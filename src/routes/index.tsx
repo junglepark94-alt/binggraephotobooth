@@ -726,18 +726,18 @@ function FestivalMap({
           pulse={inv.clover}
         />
         <Hotspot
-          left="34%"
+          left="30%"
           top="67%"
-          width="13%"
+          width="22%"
           height="15%"
           label="왕자"
           onClick={tapPrince}
           pulse={inv.candy && !inv.heart}
         />
         <Hotspot
-          left="20%"
+          left="16%"
           top="80%"
-          width="18%"
+          width="26%"
           height="13%"
           label="강아지"
           onClick={tapDog}
