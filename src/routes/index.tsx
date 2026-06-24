@@ -12,10 +12,6 @@ import {
   useRef,
   useState,
 } from "react";
-import frameBinggraeus from "@/assets/frame_binggraeus.png";
-import frameMelonaprince from "@/assets/frame_melonaprince.png";
-import frameBravocone from "@/assets/frame_bravocone.png";
-import frameBananamilk from "@/assets/frame_bananamilk.png";
 import mainBg from "@/assets/main_bg.png";
 import logo from "@/assets/logo_trim.png";
 import btnImg from "@/assets/button_trim.png";
@@ -28,16 +24,6 @@ import editToolbar from "@/assets/edit_toolbar.png";
 import resultActions from "@/assets/result_actions.png";
 import backButton from "@/assets/back_button.png";
 import fortuneButton from "@/assets/fortune_button.png";
-import imgBravocone from "@/assets/bravocone.png";
-import imgNougarbar from "@/assets/nougarbar.png";
-import imgHodumaru from "@/assets/hodumaru.png";
-import imgYomamte from "@/assets/yomamte.png";
-import imgBabambar from "@/assets/babambar.png";
-import imgTogether from "@/assets/together.jpg";
-import imgPollapo from "@/assets/pollapo.png";
-import imgTwinbar from "@/assets/twinbar.png";
-import imgBananamilk from "@/assets/bananamilk.png";
-import imgMelona from "@/assets/melona.png";
 import festivalBg from "@/assets/festival_bg.png";
 import endBg from "@/assets/end_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
@@ -55,6 +41,10 @@ import {
   loadImage,
   sliceSlotOverlays,
 } from "@/lib/photobooth";
+import { type Inventory, type Step, EMPTY_INVENTORY } from "@/lib/game";
+import { type Crop, useKeyedCrop, useNukki, useWhiteKeyed } from "@/lib/imageHooks";
+import { FRAMES } from "@/data/frames";
+import { FORTUNES } from "@/data/fortunes";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -68,60 +58,6 @@ export const Route = createFileRoute("/")({
     ],
   }),
 });
-
-// 1x1 투명 픽셀 — 새 프레임은 장식이 이미지에 포함돼 슬롯 오버레이가 필요 없다.
-const TRANSPARENT_PX =
-  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-
-const FRAMES: Record<
-  FrameKey,
-  {
-    name: string;
-    subtitle: string;
-    frame: string;
-    overlay: string;
-    overlays: string[];
-    tint: string;
-  }
-> = {
-  binggraeus: {
-    name: "빙그레우스",
-    subtitle: "아이스크림 왕국의 국왕 빙그레우스와 함께 찍는 왕실 프레임",
-    frame: frameBinggraeus,
-    overlay: TRANSPARENT_PX,
-    overlays: [TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX],
-    tint: "from-rose-300 to-amber-200",
-  },
-  melonaprince: {
-    name: "메로나 옹떼 부르쟝",
-    subtitle: "우아한 멜론빛 왕자 메로나 옹떼 부르쟝과 함께 찍는 프레임",
-    frame: frameMelonaprince,
-    overlay: TRANSPARENT_PX,
-    overlays: [TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX],
-    tint: "from-lime-200 to-green-100",
-  },
-  bravocone: {
-    name: "부라보콘",
-    subtitle: "1970년부터 함께한 바삭한 콘과 달콤한 추억의 부라보콘 프레임",
-    frame: frameBravocone,
-    overlay: TRANSPARENT_PX,
-    overlays: [TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX],
-    tint: "from-amber-100 to-rose-100",
-  },
-  bananamilk: {
-    name: "바나나맛우유",
-    subtitle: "1974년부터 사랑받은 단지 모양 바나나맛우유 프레임",
-    frame: frameBananamilk,
-    overlay: TRANSPARENT_PX,
-    overlays: [TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX, TRANSPARENT_PX],
-    tint: "from-yellow-100 to-amber-100",
-  },
-};
-
-type Step = "main" | "letter" | "map" | "select" | "shoot" | "result" | "draw" | "end";
-
-type Inventory = { photo: boolean; candy: boolean; heart: boolean; clover: boolean };
-const EMPTY_INVENTORY: Inventory = { photo: false, candy: false, heart: false, clover: false };
 
 function useFramePreviews() {
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -389,69 +325,7 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
 // 장소(사진 부스·뽑기)와 친구들(강아지·왕자·주민)을 눌러 아이템을 모은다.
 //   강아지 → 🍦아이스크림 → 왕자에게 → ❤️하트 / 사진 촬영 → 📷 → 주민에게 → 🍀클로버 → 뽑기 해금
 
-// 흰 배경으로 내보내진 PNG(흰색이 alpha=255)의 흰 픽셀을 투명 처리한 data URL을 만든다.
-// 단, 네 모서리가 불투명 흰색일 때만 동작 — 이미 투명한 이미지(예: 흰 물방울 무늬 사탕)는
-// 무늬가 지워지지 않도록 원본을 그대로 돌려준다.
-function whiteKeyToDataURL(img: HTMLImageElement, threshold = 244): string {
-  const c = document.createElement("canvas");
-  const W = (c.width = img.naturalWidth);
-  const H = (c.height = img.naturalHeight);
-  const ctx = c.getContext("2d");
-  if (!ctx) return img.src;
-  ctx.drawImage(img, 0, 0);
-  const id = ctx.getImageData(0, 0, W, H);
-  const d = id.data;
-  const isWhite = (x: number, y: number) => {
-    const i = (y * W + x) * 4;
-    return d[i + 3] > 200 && d[i] > threshold && d[i + 1] > threshold && d[i + 2] > threshold;
-  };
-  const hasWhiteBg =
-    isWhite(1, 1) && isWhite(W - 2, 1) && isWhite(1, H - 2) && isWhite(W - 2, H - 2);
-  if (!hasWhiteBg) return img.src;
-  for (let i = 0; i < d.length; i += 4) {
-    if (d[i] > threshold && d[i + 1] > threshold && d[i + 2] > threshold) d[i + 3] = 0;
-  }
-  ctx.putImageData(id, 0, 0);
-  return c.toDataURL();
-}
-
-// 캔버스 이미지 처리(키잉/크롭/누끼)는 입력 에셋에만 의존하는 순수 연산이므로,
-// 같은 결과를 화면 전환마다 다시 만들지 않도록 모듈 레벨 캐시에 dataURL을 보관한다.
-// (재방문 시 캐시 히트 → 초기값부터 처리본이라 깜빡임·재처리 없음)
-const whiteKeyCache = new Map<string, string>();
-const keyedCropCache = new Map<string, string>();
-const nukkiCache = new Map<string, string>();
-
-// 이미지 소스를 흰 배경 제거 버전으로 바꿔 반환하는 훅(준비 전엔 원본 그대로).
-function useWhiteKeyed(src: string): string {
-  const [out, setOut] = useState(() => whiteKeyCache.get(src) ?? src);
-  useEffect(() => {
-    const cached = whiteKeyCache.get(src);
-    if (cached) {
-      setOut(cached);
-      return;
-    }
-    let cancelled = false;
-    const img = new Image();
-    img.onload = () => {
-      if (cancelled) return;
-      const result = whiteKeyToDataURL(img);
-      whiteKeyCache.set(src, result);
-      setOut(result);
-    };
-    img.src = src;
-    return () => {
-      cancelled = true;
-    };
-  }, [src]);
-  return out;
-}
-
-// 흰 배경 RGB 버튼 에셋(edit_toolbar/result_actions/back_button)에서 지정 박스만 잘라
-// 흰색을 투명 처리. 원본은 바깥쪽 흰 여백이 넓어, 측정한 콘텐츠 박스만 크롭해
-// w-full로 자연스러운 높이를 만들고 그 위에 글자를 비율 좌표로 오버레이한다.
-type Crop = { x0: number; y0: number; x1: number; y1: number };
-
+// useKeyedCrop용 크롭 박스 + 셀 중심 좌표 (버튼 에셋 위 글자/아이콘 오버레이 위치).
 // 1x3 툴바 바(되돌리기/스티커/브러시). 세 셀의 가로 중심은 크롭 박스 기준.
 const TOOLBAR_CROP: Crop = { x0: 0.03, y0: 0.345, x1: 0.97, y1: 0.65 };
 const TOOLBAR_CELL_CX = [0.165, 0.5, 0.834];
@@ -474,134 +348,6 @@ const FORTUNE_BTN_CELLS = [
   { cx: 0.253, cy: 0.47 },
   { cx: 0.746, cy: 0.47 },
 ];
-
-function useKeyedCrop(src: string, crop: Crop): string {
-  const cacheKey = `${src}|${crop.x0},${crop.y0},${crop.x1},${crop.y1}`;
-  const [out, setOut] = useState(() => keyedCropCache.get(cacheKey) ?? src);
-  useEffect(() => {
-    const cached = keyedCropCache.get(cacheKey);
-    if (cached) {
-      setOut(cached);
-      return;
-    }
-    let cancelled = false;
-    const img = new Image();
-    img.onload = () => {
-      if (cancelled) return;
-      const W = img.naturalWidth;
-      const H = img.naturalHeight;
-      const sx = Math.round(crop.x0 * W);
-      const sy = Math.round(crop.y0 * H);
-      const sw = Math.round((crop.x1 - crop.x0) * W);
-      const sh = Math.round((crop.y1 - crop.y0) * H);
-      const c = document.createElement("canvas");
-      c.width = sw;
-      c.height = sh;
-      const ctx = c.getContext("2d");
-      if (!ctx) {
-        setOut(src);
-        return;
-      }
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-      const id = ctx.getImageData(0, 0, sw, sh);
-      const d = id.data;
-      for (let i = 0; i < d.length; i += 4) {
-        if (d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244) d[i + 3] = 0;
-      }
-      ctx.putImageData(id, 0, 0);
-      const result = c.toDataURL();
-      keyedCropCache.set(cacheKey, result);
-      setOut(result);
-    };
-    img.src = src;
-    return () => {
-      cancelled = true;
-    };
-  }, [src, cacheKey, crop]);
-  return out;
-}
-
-// 흰 배경 누끼: 모서리에서 flood-fill로 연결된 흰 영역만 투명화(제품 내부 흰색은 보존).
-// 이미 투명 PNG면 원본을 그대로 반환. 표시용이라 최대 512px로 축소해 처리한다.
-function useNukki(src: string): string {
-  const [out, setOut] = useState(() => nukkiCache.get(src) ?? src);
-  useEffect(() => {
-    const cached = nukkiCache.get(src);
-    if (cached) {
-      setOut(cached);
-      return;
-    }
-    let cancelled = false;
-    const img = new Image();
-    img.onload = () => {
-      if (cancelled) return;
-      const maxDim = 512;
-      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
-      const W = Math.max(1, Math.round(img.naturalWidth * scale));
-      const H = Math.max(1, Math.round(img.naturalHeight * scale));
-      const c = document.createElement("canvas");
-      c.width = W;
-      c.height = H;
-      const ctx = c.getContext("2d");
-      if (!ctx) {
-        setOut(src);
-        return;
-      }
-      ctx.drawImage(img, 0, 0, W, H);
-      const id = ctx.getImageData(0, 0, W, H);
-      const d = id.data;
-      const alphaAt = (x: number, y: number) => d[(y * W + x) * 4 + 3];
-      // 모서리가 이미 투명하면(누끼 완료) 원본 그대로 사용
-      if (
-        alphaAt(0, 0) < 20 &&
-        alphaAt(W - 1, 0) < 20 &&
-        alphaAt(0, H - 1) < 20 &&
-        alphaAt(W - 1, H - 1) < 20
-      ) {
-        nukkiCache.set(src, src);
-        setOut(src);
-        return;
-      }
-      const near = (i: number) => d[i] > 236 && d[i + 1] > 236 && d[i + 2] > 236;
-      const seen = new Uint8Array(W * H);
-      const stack: number[] = [];
-      const push = (x: number, y: number) => {
-        if (x < 0 || y < 0 || x >= W || y >= H) return;
-        stack.push(y * W + x);
-      };
-      for (let x = 0; x < W; x++) {
-        push(x, 0);
-        push(x, H - 1);
-      }
-      for (let y = 0; y < H; y++) {
-        push(0, y);
-        push(W - 1, y);
-      }
-      while (stack.length) {
-        const p = stack.pop()!;
-        if (seen[p]) continue;
-        seen[p] = 1;
-        if (!near(p * 4)) continue;
-        d[p * 4 + 3] = 0;
-        const x = p % W;
-        const y = (p / W) | 0;
-        push(x + 1, y);
-        push(x - 1, y);
-        push(x, y + 1);
-        push(x, y - 1);
-      }
-      ctx.putImageData(id, 0, 0);
-      const result = c.toDataURL();
-      nukkiCache.set(src, result);
-      setOut(result);
-    };
-    img.src = src;
-    return () => {
-      cancelled = true;
-    };
-  }, [src]);
-  return out;
-}
 
 // 클로버=나뭇잎이라 아이콘은 총 4개. 빈 바(nav_bar_empty) 위 균등 4칸(dstCx)에 등장시킨다.
 const NAV_ICONS: {
@@ -2041,76 +1787,6 @@ function ResultScreen({
 
 // ───────────────────────── 아이스크림 뽑기 (스토리보드 J-SCREEN) ─────────────────────────
 // 스크래치 복권을 긁으면 오늘의 아이스크림 운세(10종)가 공개된다.
-
-type Fortune = { name: string; img: string; luck: number; message: string };
-
-const FORTUNES: Fortune[] = [
-  {
-    name: "부라보콘",
-    img: imgBravocone,
-    luck: 100,
-    message:
-      "오늘 하루 부라브라보 할 일이 가득하겠어요. 당신의 자신감이 멋진 결과를 만들어낼 거예요!",
-  },
-  {
-    name: "누가바",
-    img: imgNougarbar,
-    luck: 85,
-    message:
-      "고소한 누가처럼 당신의 진심이 누군가의 마음을 녹일 거예요. 용기를 내 먼저 얘기해 보세요. 진심을 알아줄거예요.",
-  },
-  {
-    name: "호두마루",
-    img: imgHodumaru,
-    luck: 80,
-    message: "호두처럼 묵묵히 쌓아온 노력의 결실을 맛볼 때예요!",
-  },
-  {
-    name: "요맘때",
-    img: imgYomamte,
-    luck: 70,
-    message:
-      "지친 마음에 달콤한 휴식이 필요해요. 가끔은 나를 위한 시간을 가져보세요. 새로운 에너지를 충전하면 더 좋은 일이 생길 거예요!",
-  },
-  {
-    name: "바밤바",
-    img: imgBabambar,
-    luck: 60,
-    message:
-      "밤의 부드럽고 포슬함처럼 오늘 하루 조금 느려서 답답할 수도 있지만, 곧 좋은 소식이 기다리고 있겠어요!",
-  },
-  {
-    name: "투게더",
-    img: imgTogether,
-    luck: 78,
-    message: "함께라서 더 행복한 하루! 소중한 사람들과의 시간이 큰 행운을 가져다줘요.",
-  },
-  {
-    name: "폴라포",
-    img: imgPollapo,
-    luck: 90,
-    message: "폴라포처럼 끝~내주게 시원한 하루가 될 거예요!",
-  },
-  {
-    name: "쌍쌍바",
-    img: imgTwinbar,
-    luck: 72,
-    message: "사랑하는 사람과 잘될 수 있는 날이에요. 쌍쌍바 권해보는 거 어떠신가요?",
-  },
-  {
-    name: "바나나맛우유",
-    img: imgBananamilk,
-    luck: 69,
-    message: "막혔던 일이 시원하게 해결되고, 달달하고 기분 좋은 전환점이 찾아올 거예요.",
-  },
-  {
-    name: "메로나",
-    img: imgMelona,
-    luck: 50,
-    message:
-      "주변이 시끄러운 하루 일 수 있어요. 오늘은 메론 본연의 맛이 담긴 메로나를 먹으면서 적당한 휴식이 필요한 날이겠어요..",
-  },
-];
 
 function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
