@@ -2252,37 +2252,37 @@ function EndScreen({ onRestart }: { onRestart: () => void }) {
           draggable={false}
         />
 
-        <div className="absolute inset-0 flex flex-col px-6">
-          {/* 상단 로고 (메인페이지처럼 logo_trim) + 여름축제 서브타이틀 */}
-          <div className="mt-[3%] flex justify-center">
-            <div className="relative w-[80%] max-w-none">
-              <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
-              <svg
-                viewBox="0 0 929 538"
-                preserveAspectRatio="xMidYMid meet"
-                className="pointer-events-none absolute inset-0 h-full w-full"
-                aria-hidden="true"
+        {/* 상단 로고 + 여름축제 리본 — 메인 화면과 동일 크기/위치 */}
+        <div className="absolute inset-x-0 top-[3%] flex justify-center">
+          <div className="relative w-[95%] max-w-none">
+            <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
+            <svg
+              viewBox="0 0 929 538"
+              preserveAspectRatio="xMidYMid meet"
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              aria-hidden="true"
+            >
+              <defs>
+                <path id="endRibbonPath" d="M 148 450 Q 464 408 780 450" fill="none" />
+              </defs>
+              <text
+                textAnchor="middle"
+                fill="#b14a72"
+                fontWeight={700}
+                fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
+                fontSize={30}
               >
-                <defs>
-                  <path id="endRibbonPath" d="M 148 450 Q 464 408 780 450" fill="none" />
-                </defs>
-                <text
-                  textAnchor="middle"
-                  fill="#b14a72"
-                  fontWeight={700}
-                  fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
-                  fontSize={30}
-                >
-                  <textPath href="#endRibbonPath" startOffset="50%">
-                    오늘도 맛있는 즐거움이 가득한 곳
-                  </textPath>
-                </text>
-              </svg>
-            </div>
+                <textPath href="#endRibbonPath" startOffset="50%">
+                  오늘도 맛있는 즐거움이 가득한 곳
+                </textPath>
+              </text>
+            </svg>
           </div>
+        </div>
 
-          {/* 창 (window 에셋) — 안내 + 처음으로 버튼 */}
-          <div className="mx-auto mt-[4%] w-full max-w-[310px]">
+        {/* 창 (window 에셋) — 로고 아래로 내림 */}
+        <div className="absolute inset-x-0 top-[35%] flex justify-center px-6">
+          <div className="w-full max-w-[310px]">
             <WindowDialog onClose={onRestart}>
               <div className="w-full text-center">
                 <p className="font-display text-[16px] font-extrabold leading-relaxed text-foreground">
