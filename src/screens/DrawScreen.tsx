@@ -23,6 +23,7 @@ const FORTUNE_BTN_CELLS = [
 export function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scratchingRef = useRef(false);
+  const lastRef = useRef<{ x: number; y: number } | null>(null);
   const [revealed, setRevealed] = useState(false);
   const fortune = useMemo(() => FORTUNES[Math.floor(Math.random() * FORTUNES.length)], []);
   const noteSrc = useWhiteKeyed(selectNote);
@@ -59,16 +60,46 @@ export function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () =>
     ctx.fillText("전설의 클로버로 오늘의 운세 확인 ✨", W / 2, H / 2 + 28);
   }, []);
 
-  const scratchAt = (e: ReactPointerEvent) => {
-    const cv = canvasRef.current!;
-    const r = cv.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * W;
-    const y = ((e.clientY - r.top) / r.height) * H;
-    const ctx = cv.getContext("2d")!;
+  const SCRATCH_R = 26;
+
+  const toLocal = (clientX: number, clientY: number) => {
+    const r = canvasRef.current!.getBoundingClientRect();
+    return { x: ((clientX - r.left) / r.width) * W, y: ((clientY - r.top) / r.height) * H };
+  };
+
+  // 이전 점과 현재 점을 둥근 선으로 이어 끊김 없이 지운다.
+  const scratchTo = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
     ctx.globalCompositeOperation = "destination-out";
+    const last = lastRef.current;
+    if (last) {
+      ctx.lineWidth = SCRATCH_R * 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
     ctx.beginPath();
-    ctx.arc(x, y, 28, 0, Math.PI * 2);
+    ctx.arc(x, y, SCRATCH_R, 0, Math.PI * 2);
     ctx.fill();
+    lastRef.current = { x, y };
+  };
+
+  const scratchAt = (e: ReactPointerEvent) => {
+    const ctx = canvasRef.current!.getContext("2d")!;
+    // 빠른 드래그에서도 끊기지 않도록 합쳐진(coalesced) 중간 포인트까지 모두 처리한다.
+    const native = e.nativeEvent;
+    const points = native.getCoalescedEvents?.() ?? [];
+    if (points.length) {
+      for (const ev of points) {
+        const p = toLocal(ev.clientX, ev.clientY);
+        scratchTo(ctx, p.x, p.y);
+      }
+    } else {
+      const p = toLocal(e.clientX, e.clientY);
+      scratchTo(ctx, p.x, p.y);
+    }
   };
 
   // 50% 이상 긁으면 전체 공개
@@ -87,6 +118,7 @@ export function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () =>
   const onDown = (e: ReactPointerEvent) => {
     if (revealed) return;
     scratchingRef.current = true;
+    lastRef.current = null; // 새 획 시작 — 직전 위치와 잇지 않는다
     canvasRef.current!.setPointerCapture(e.pointerId);
     scratchAt(e);
   };
@@ -97,6 +129,7 @@ export function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () =>
   const onUp = () => {
     if (!scratchingRef.current) return;
     scratchingRef.current = false;
+    lastRef.current = null;
     checkRevealed();
   };
 
