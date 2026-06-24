@@ -23,6 +23,7 @@ const FORTUNE_BTN_CELLS = [
 export function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scratchingRef = useRef(false);
+  const everScratchedRef = useRef(false);
   const lastRef = useRef<{ x: number; y: number } | null>(null);
   const [revealed, setRevealed] = useState(false);
   const fortune = useMemo(() => FORTUNES[Math.floor(Math.random() * FORTUNES.length)], []);
@@ -38,26 +39,39 @@ export function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () =>
     const cv = canvasRef.current;
     if (!cv) return;
     const ctx = cv.getContext("2d")!;
-    ctx.globalCompositeOperation = "source-over";
-    const g = ctx.createLinearGradient(0, 0, W, H);
-    g.addColorStop(0, "#ff9ec4");
-    g.addColorStop(0.5, "#cdb4f6");
-    g.addColorStop(1, "#9bd9e8");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = "rgba(255,255,255,0.55)";
-    for (let i = 0; i < 50; i++) {
-      ctx.beginPath();
-      ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 2.5 + 1, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 40px Jua, system-ui, sans-serif";
-    ctx.fillText("긁어보세요!", W / 2, H / 2 - 16);
-    ctx.font = "bold 21px Jua, system-ui, sans-serif";
-    ctx.fillText("전설의 클로버로 오늘의 운세 확인 ✨", W / 2, H / 2 + 28);
+    // Yeon Sung 한 폰트로만 그린다 (전체 한글 음절 커버 → "긁"도 같은 폰트로 통일).
+    const scratchFont = "'Yeon Sung', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif";
+    const draw = () => {
+      ctx.globalCompositeOperation = "source-over";
+      const g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, "#ff9ec4");
+      g.addColorStop(0.5, "#cdb4f6");
+      g.addColorStop(1, "#9bd9e8");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      for (let i = 0; i < 50; i++) {
+        ctx.beginPath();
+        ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 2.5 + 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "rgba(255,255,255,0.97)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `52px ${scratchFont}`;
+      ctx.fillText("긁어보세요!", W / 2, H / 2 - 24);
+      ctx.font = `30px ${scratchFont}`;
+      ctx.fillText("전설의 클로버로 오늘의 운세 확인 ✨", W / 2, H / 2 + 34);
+    };
+    draw();
+    // 마운트 시점에 Yeon Sung이 아직 안 깔렸으면 시스템 폰트로 폴백되므로,
+    // 폰트 로드 완료 후 한 번 더 그린다. (아직 안 긁은 초기 상태일 때만 재도색)
+    document.fonts
+      .load(`52px ${scratchFont}`)
+      .then(() => {
+        if (!everScratchedRef.current) draw();
+      })
+      .catch(() => {});
   }, []);
 
   const SCRATCH_R = 26;
@@ -118,6 +132,7 @@ export function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () =>
   const onDown = (e: ReactPointerEvent) => {
     if (revealed) return;
     scratchingRef.current = true;
+    everScratchedRef.current = true; // 폰트 늦은 로드 후 재도색이 스크래치를 지우지 않게
     lastRef.current = null; // 새 획 시작 — 직전 위치와 잇지 않는다
     canvasRef.current!.setPointerCapture(e.pointerId);
     scratchAt(e);
