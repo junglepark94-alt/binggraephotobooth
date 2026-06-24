@@ -2238,10 +2238,10 @@ function EndScreen({ onRestart }: { onRestart: () => void }) {
                   fill="#b14a72"
                   fontWeight={700}
                   fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
-                  fontSize={34}
+                  fontSize={30}
                 >
                   <textPath href="#endRibbonPath" startOffset="50%">
-                    여름축제
+                    오늘도 맛있는 즐거움이 가득한 곳
                   </textPath>
                 </text>
               </svg>
