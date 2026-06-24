@@ -357,10 +357,20 @@ function LetterScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
                 From. 빙그레…
               </span>
               {/* 본문 (구분선 아래) */}
-              <div className="absolute inset-x-[12%] top-[25%] space-y-3 text-[13px] font-medium leading-relaxed text-foreground/90">
-                <p>두 왕국이 만나 하나의 아이스크림 왕국이 되었습니다! 🍦👑</p>
-                <p>오늘부터 마을 광장에서 여름 축제가 시작됩니다.</p>
-                <p>축제 속 숨겨진 이벤트와 추억을 함께 남겨보세요. ✨</p>
+              <div className="absolute inset-x-[12%] top-[25%] space-y-3 text-[15px] font-medium leading-relaxed text-foreground/90">
+                <p>
+                  2026년, 빙그레 왕국과 해태아이스 왕국이 만나 하나의 아이스크림 왕국이 되었습니다!
+                </p>
+                <p>
+                  오늘부터 마을 광장에서 여름 축제가
+                  <br />
+                  시작됩니다.
+                </p>
+                <p>
+                  축제 속 숨겨진 이벤트와 추억을
+                  <br />
+                  함께 남겨보세요. ✨
+                </p>
               </div>
             </div>
             <ImageButton
@@ -745,7 +755,7 @@ function FestivalMap({
 
         {/* 말풍선 */}
         {bubble && (
-          <div className="festival-card absolute inset-x-3 top-[8%] z-20 p-3 text-sm leading-relaxed">
+          <div className="festival-card absolute inset-x-3 top-[8%] z-20 p-3 text-[15px] leading-relaxed">
             <b className="text-primary">{bubble.who}</b>
             <span className="ml-1">{bubble.text}</span>
           </div>
@@ -791,7 +801,7 @@ function FestivalMap({
             aria-label="안내 닫기"
             className="absolute inset-0 z-30 flex items-center justify-center bg-black/20 px-8"
           >
-            <div className="festival-card relative max-w-[300px] p-5 text-center text-[15px] font-bold leading-relaxed text-foreground">
+            <div className="festival-card relative max-w-[300px] p-5 text-center text-[16px] font-bold leading-relaxed text-foreground">
               빙그레 왕국 여름축제에 온 걸 환영해!
               <br />
               화면의{" "}
@@ -1076,7 +1086,7 @@ function SelectScreen({
               </div>
               <div className="flex-1">
                 <div className="text-xl font-extrabold text-amber-900">{f.name}</div>
-                <div className="mt-1 text-xs leading-snug text-amber-800/80">{f.subtitle}</div>
+                <div className="mt-1 text-[13px] leading-snug text-amber-800/80">{f.subtitle}</div>
               </div>
               <div
                 className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${
@@ -1237,7 +1247,7 @@ function ShootScreen({
                 className="mx-auto h-16 w-16 select-none object-contain"
               />
               <h3 className="mt-1 text-xl font-extrabold text-primary">카메라 준비</h3>
-              <p className="mt-2 text-sm leading-relaxed text-foreground/80">
+              <p className="mt-2 text-[15px] leading-relaxed text-foreground/80">
                 네컷 촬영을 위해 카메라 접근 권한이 필요해요. 아래 버튼을 누르고 브라우저에서
                 “허용”을 선택해주세요.
               </p>
@@ -1264,7 +1274,7 @@ function ShootScreen({
             <div className="text-center">
               <div className="text-5xl">😢</div>
               <h3 className="mt-1 text-xl font-extrabold text-primary">카메라를 못 켰어요</h3>
-              <p className="mt-2 text-sm leading-relaxed text-foreground/85">{error}</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-foreground/85">{error}</p>
               <SelectButton onClick={retry} label="다시 시도" className="mt-4" />
               <p className="mt-2 text-[11px] leading-snug text-foreground/60">
                 계속 안 되면 주소창의 카메라 아이콘에서 권한을 “허용”으로 바꿔주세요.
@@ -1717,7 +1727,7 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
 
         {tool === "sticker" && (
           <div className="festival-card mt-3 p-3">
-            <p className="mb-2 text-center text-xs text-muted-foreground">
+            <p className="mb-2 text-center text-sm text-muted-foreground">
               스티커를 탭해 추가하고, 드래그로 옮겨보세요.
             </p>
             <div className="grid grid-cols-6 gap-2">
@@ -2147,7 +2157,7 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
           아이스크림 뽑기
         </h2>
         <WindowPanel onClose={onBack}>
-          <p className="mb-2 text-center text-xs text-muted-foreground">
+          <p className="mb-2 text-center text-sm text-muted-foreground">
             전설의 클로버로 오늘의 아이스크림 운세를 뽑아보세요!
           </p>
           <div
@@ -2195,7 +2205,7 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
           <div className="relative mx-auto w-[96%] max-w-[360px]">
             <img src={noteSrc} alt="" draggable={false} className="w-full select-none" />
             <span className="absolute inset-0 flex items-center justify-center px-[13%] text-center font-medium leading-snug text-amber-900/85">
-              <span style={{ fontSize: "clamp(11px, 3vw, 14px)" }}>{fortune.message}</span>
+              <span style={{ fontSize: "clamp(12px, 3.3vw, 15px)" }}>{fortune.message}</span>
             </span>
           </div>
         )}
@@ -2275,7 +2285,7 @@ function EndScreen({ onRestart }: { onRestart: () => void }) {
           <div className="mx-auto mt-[4%] w-full max-w-[310px]">
             <WindowDialog onClose={onRestart}>
               <div className="w-full text-center">
-                <p className="font-display text-[15px] font-extrabold leading-relaxed text-foreground">
+                <p className="font-display text-[16px] font-extrabold leading-relaxed text-foreground">
                   하나의 왕국이 된 빙그레,
                   <br />
                   아이스크림 축제를 모두 즐겼어요.
