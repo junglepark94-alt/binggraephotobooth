@@ -535,7 +535,7 @@ export function ResultScreen({
     return () => {
       cancelled = true;
     };
-  }, [frameKey, shots, f.frame, f.overlay]);
+  }, [frameKey, shots, f.frame, f.overlays]);
 
   const save = () => {
     const url = exportImage();
