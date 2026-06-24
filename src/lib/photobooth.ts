@@ -25,7 +25,13 @@ export async function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+// 슬롯 감지/슬라이스는 정적 프레임 에셋에만 의존하므로 src 기준으로 캐시한다.
+const slotCache = new Map<string, Slot[]>();
+const sliceCache = new Map<string, string[]>();
+
 export function detectGreenSlots(img: HTMLImageElement): Slot[] {
+  const cached = slotCache.get(img.src);
+  if (cached) return cached;
   const c = document.createElement("canvas");
   c.width = img.naturalWidth;
   c.height = img.naturalHeight;
@@ -79,7 +85,9 @@ export function detectGreenSlots(img: HTMLImageElement): Slot[] {
     }
   }
   rects.sort((a, b) => b.w * b.h - a.w * a.h);
-  return rects.slice(0, 4).sort((a, b) => a.y - b.y);
+  const slots = rects.slice(0, 4).sort((a, b) => a.y - b.y);
+  slotCache.set(img.src, slots);
+  return slots;
 }
 
 export function drawCover(
@@ -154,7 +162,9 @@ export function createFrameOverlay(frame: HTMLImageElement): HTMLCanvasElement {
 // 각 슬롯 영역을 잘라 초록(사진 자리)만 투명 처리한 오버레이 4장.
 // 그 칸에 겹쳐 들어온 캐릭터/장식만 남아, 촬영 미리보기에 컷별로 띄울 수 있다.
 export function sliceSlotOverlays(frame: HTMLImageElement, slots: Slot[]): string[] {
-  return slots.map((s) => {
+  const cached = sliceCache.get(frame.src);
+  if (cached) return cached;
+  const overlays = slots.map((s) => {
     const c = document.createElement("canvas");
     c.width = Math.max(1, Math.round(s.w));
     c.height = Math.max(1, Math.round(s.h));
@@ -169,6 +179,8 @@ export function sliceSlotOverlays(frame: HTMLImageElement, slots: Slot[]): strin
     ctx.putImageData(id, 0, 0);
     return c.toDataURL("image/png");
   });
+  sliceCache.set(frame.src, overlays);
+  return overlays;
 }
 
 export async function composeStrip(opts: {

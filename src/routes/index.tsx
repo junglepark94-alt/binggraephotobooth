@@ -415,13 +415,34 @@ function whiteKeyToDataURL(img: HTMLImageElement, threshold = 244): string {
   return c.toDataURL();
 }
 
+// 캔버스 이미지 처리(키잉/크롭/누끼)는 입력 에셋에만 의존하는 순수 연산이므로,
+// 같은 결과를 화면 전환마다 다시 만들지 않도록 모듈 레벨 캐시에 dataURL을 보관한다.
+// (재방문 시 캐시 히트 → 초기값부터 처리본이라 깜빡임·재처리 없음)
+const whiteKeyCache = new Map<string, string>();
+const keyedCropCache = new Map<string, string>();
+const nukkiCache = new Map<string, string>();
+
 // 이미지 소스를 흰 배경 제거 버전으로 바꿔 반환하는 훅(준비 전엔 원본 그대로).
 function useWhiteKeyed(src: string): string {
-  const [out, setOut] = useState(src);
+  const [out, setOut] = useState(() => whiteKeyCache.get(src) ?? src);
   useEffect(() => {
+    const cached = whiteKeyCache.get(src);
+    if (cached) {
+      setOut(cached);
+      return;
+    }
+    let cancelled = false;
     const img = new Image();
-    img.onload = () => setOut(whiteKeyToDataURL(img));
+    img.onload = () => {
+      if (cancelled) return;
+      const result = whiteKeyToDataURL(img);
+      whiteKeyCache.set(src, result);
+      setOut(result);
+    };
     img.src = src;
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
   return out;
 }
@@ -455,10 +476,18 @@ const FORTUNE_BTN_CELLS = [
 ];
 
 function useKeyedCrop(src: string, crop: Crop): string {
-  const [out, setOut] = useState(src);
+  const cacheKey = `${src}|${crop.x0},${crop.y0},${crop.x1},${crop.y1}`;
+  const [out, setOut] = useState(() => keyedCropCache.get(cacheKey) ?? src);
   useEffect(() => {
+    const cached = keyedCropCache.get(cacheKey);
+    if (cached) {
+      setOut(cached);
+      return;
+    }
+    let cancelled = false;
     const img = new Image();
     img.onload = () => {
+      if (cancelled) return;
       const W = img.naturalWidth;
       const H = img.naturalHeight;
       const sx = Math.round(crop.x0 * W);
@@ -480,18 +509,28 @@ function useKeyedCrop(src: string, crop: Crop): string {
         if (d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244) d[i + 3] = 0;
       }
       ctx.putImageData(id, 0, 0);
-      setOut(c.toDataURL());
+      const result = c.toDataURL();
+      keyedCropCache.set(cacheKey, result);
+      setOut(result);
     };
     img.src = src;
-  }, [src, crop]);
+    return () => {
+      cancelled = true;
+    };
+  }, [src, cacheKey, crop]);
   return out;
 }
 
 // 흰 배경 누끼: 모서리에서 flood-fill로 연결된 흰 영역만 투명화(제품 내부 흰색은 보존).
 // 이미 투명 PNG면 원본을 그대로 반환. 표시용이라 최대 512px로 축소해 처리한다.
 function useNukki(src: string): string {
-  const [out, setOut] = useState(src);
+  const [out, setOut] = useState(() => nukkiCache.get(src) ?? src);
   useEffect(() => {
+    const cached = nukkiCache.get(src);
+    if (cached) {
+      setOut(cached);
+      return;
+    }
     let cancelled = false;
     const img = new Image();
     img.onload = () => {
@@ -519,6 +558,7 @@ function useNukki(src: string): string {
         alphaAt(0, H - 1) < 20 &&
         alphaAt(W - 1, H - 1) < 20
       ) {
+        nukkiCache.set(src, src);
         setOut(src);
         return;
       }
@@ -551,7 +591,9 @@ function useNukki(src: string): string {
         push(x, y - 1);
       }
       ctx.putImageData(id, 0, 0);
-      setOut(c.toDataURL());
+      const result = c.toDataURL();
+      nukkiCache.set(src, result);
+      setOut(result);
     };
     img.src = src;
     return () => {
