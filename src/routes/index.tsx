@@ -174,7 +174,30 @@ function useFramePreviews() {
   return previews;
 }
 
+// 첫 방문(캐시 없음) 시 화면 전환마다 이미지가 뒤늦게 뜨는 것을 막기 위해,
+// 앱 진입 직후 모든 에셋을 백그라운드로 미리 받아 브라우저 캐시를 데운다.
+// (메인 화면을 보는 몇 초 동안 받아두므로 사용자는 대기를 느끼지 않는다.)
+function usePreloadAssets() {
+  useEffect(() => {
+    const mods = import.meta.glob("../assets/*.{png,jpg,jpeg}", {
+      eager: true,
+      query: "?url",
+      import: "default",
+    }) as Record<string, string>;
+    const urls = Object.values(mods);
+    const t = window.setTimeout(() => {
+      for (const url of urls) {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = url;
+      }
+    }, 200);
+    return () => window.clearTimeout(t);
+  }, []);
+}
+
 function App() {
+  usePreloadAssets();
   const [step, setStep] = useState<Step>("main");
   const [frameKey, setFrameKey] = useState<FrameKey | null>(null);
   const [shots, setShots] = useState<string[]>([]);
