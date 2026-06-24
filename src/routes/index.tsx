@@ -179,11 +179,13 @@ function App() {
   const [frameKey, setFrameKey] = useState<FrameKey | null>(null);
   const [shots, setShots] = useState<string[]>([]);
   const [inv, setInv] = useState<Inventory>(EMPTY_INVENTORY);
+  const [mapIntroSeen, setMapIntroSeen] = useState(false);
 
   const restart = () => {
     setShots([]);
     setFrameKey(null);
     setInv(EMPTY_INVENTORY);
+    setMapIntroSeen(false);
     setStep("main");
   };
 
@@ -201,6 +203,8 @@ function App() {
             onPhoto={() => setStep("select")}
             onDraw={() => setStep("draw")}
             onEnd={() => setStep("end")}
+            introSeen={mapIntroSeen}
+            onIntroSeen={() => setMapIntroSeen(true)}
           />
         )}
         {step === "select" && (
@@ -544,12 +548,16 @@ function FestivalMap({
   onPhoto,
   onDraw,
   onEnd,
+  introSeen,
+  onIntroSeen,
 }: {
   inv: Inventory;
   setInv: Dispatch<SetStateAction<Inventory>>;
   onPhoto: () => void;
   onDraw: () => void;
   onEnd: () => void;
+  introSeen: boolean;
+  onIntroSeen: () => void;
 }) {
   const [bubble, setBubble] = useState<{ who: string; text: string } | null>(null);
   const say = (who: string, text: string) => setBubble({ who, text });
@@ -750,6 +758,38 @@ function FestivalMap({
             ))}
           </div>
         </div>
+
+        {/* 첫 방문 환영 안내 말풍선 — 아무 곳이나 터치하면 닫힘 */}
+        {!introSeen && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={onIntroSeen}
+            aria-label="안내 닫기"
+            className="absolute inset-0 z-30 flex items-center justify-center bg-black/20 px-8"
+          >
+            <div className="festival-card relative max-w-[300px] p-5 text-center text-[15px] font-bold leading-relaxed text-foreground">
+              빙그레 왕국 여름축제에 온 걸 환영해!
+              <br />
+              화면의{" "}
+              <span className="mx-0.5 inline-grid h-5 w-5 translate-y-0.5 place-items-center rounded-full bg-primary text-xs font-extrabold text-primary-foreground shadow">
+                !
+              </span>{" "}
+              표시들을 하나씩 눌러봐.
+              <span className="mt-2 block text-xs font-medium text-muted-foreground">
+                터치하면 닫혀요
+              </span>
+              {/* 말풍선 꼬리 */}
+              <span
+                className="absolute -bottom-2 left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 bg-card"
+                style={{
+                  borderRight: "2px solid color-mix(in oklch, var(--color-primary) 16%, white)",
+                  borderBottom: "2px solid color-mix(in oklch, var(--color-primary) 16%, white)",
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
