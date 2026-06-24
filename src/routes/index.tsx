@@ -13,7 +13,6 @@ import {
   useState,
 } from "react";
 import mainBg from "@/assets/main_bg.png";
-import logo from "@/assets/logo_trim.png";
 import windowImg from "@/assets/window_trim.png";
 import icecreamLoading from "@/assets/icecream_loading.png";
 import selectNote from "@/assets/select_note.png";
@@ -22,7 +21,6 @@ import resultActions from "@/assets/result_actions.png";
 import backButton from "@/assets/back_button.png";
 import fortuneButton from "@/assets/fortune_button.png";
 import festivalBg from "@/assets/festival_bg.png";
-import endBg from "@/assets/end_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
 import navIconPhoto from "@/assets/nav_icon_photo.png";
 import navIconClover from "@/assets/nav_icon_clover.png";
@@ -50,6 +48,8 @@ import {
   WindowDialog,
   WindowPanel,
 } from "@/components/common";
+import { MainScreen } from "@/screens/MainScreen";
+import { EndScreen } from "@/screens/EndScreen";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -590,59 +590,6 @@ function FestivalMap({
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-// 메인 화면 (스토리보드 02 MAIN SCREEN) — 배경 일러스트(빙그레 왕국) + 게임 시작 버튼.
-// 배경 에셋 교체 방법: src/assets/main_bg.png 를 추가하고 import 한 뒤,
-//   아래 "배경 일러스트 placeholder" 블록을
-//   <img src={mainBg} alt="빙그레 왕국" className="absolute inset-0 h-full w-full object-cover" />
-//   한 줄로 바꾸면 된다. (타이틀·캐릭터는 이미지에 포함되어 있으므로 버튼만 오버레이)
-function MainScreen({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="mx-auto flex min-h-[100dvh] md:min-h-[90vh] max-w-md flex-col">
-      <div className="relative flex-1 overflow-hidden rounded-none md:rounded-3xl md:ring-1 md:ring-border">
-        <img
-          src={mainBg}
-          alt="빙그레 왕국"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-
-        {/* 타이틀 로고 오버레이 (logo.png — 투명 배경) + 리본 곡선에 부제 */}
-        <div className="absolute inset-x-0 top-[3%] flex justify-center">
-          <div className="relative w-[95%] max-w-none">
-            <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
-            {/* 부제를 리본 아치 곡선(트림 이미지 929x538 픽셀 측정)에 태운다 */}
-            <svg
-              viewBox="0 0 929 538"
-              preserveAspectRatio="xMidYMid meet"
-              className="pointer-events-none absolute inset-0 h-full w-full"
-              aria-hidden="true"
-            >
-              <defs>
-                <path id="ribbonPath" d="M 148 450 Q 464 408 780 450" fill="none" />
-              </defs>
-              <text
-                textAnchor="middle"
-                fill="#b14a72"
-                fontWeight={700}
-                fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
-                fontSize={30}
-              >
-                <textPath href="#ribbonPath" startOffset="50%">
-                  오늘도 맛있는 즐거움이 가득한 곳
-                </textPath>
-              </text>
-            </svg>
-          </div>
-        </div>
-
-        {/* 게임 시작 버튼 */}
-        <div className="absolute inset-x-0 bottom-7 flex justify-center px-6">
-          <ImageButton onClick={onStart} label="게임 시작" textClassName="text-2xl" />
-        </div>
       </div>
     </div>
   );
@@ -1774,63 +1721,3 @@ function DrawScreen({ onBack, onEnd }: { onBack: () => void; onEnd: () => void }
   );
 }
 
-// ───────────────────────── 축제 종료 (스토리보드 END SCREEN) ─────────────────────────
-// 축제 종료 화면 — 노을 진 왕국 배경 + 안내 다이얼로그 + 하단 타이틀.
-function EndScreen({ onRestart }: { onRestart: () => void }) {
-  return (
-    <div className="mx-auto flex min-h-[100dvh] md:min-h-[90vh] max-w-md flex-col">
-      <div className="relative flex-1 overflow-hidden rounded-none md:rounded-3xl md:ring-1 md:ring-border">
-        <img
-          src={endBg}
-          alt="노을이 진 빙그레 왕국"
-          className="absolute inset-0 h-full w-full select-none object-cover"
-          draggable={false}
-        />
-
-        {/* 상단 로고 + 여름축제 리본 — 메인 화면과 동일 크기/위치 */}
-        <div className="absolute inset-x-0 top-[3%] flex justify-center">
-          <div className="relative w-[95%] max-w-none">
-            <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
-            <svg
-              viewBox="0 0 929 538"
-              preserveAspectRatio="xMidYMid meet"
-              className="pointer-events-none absolute inset-0 h-full w-full"
-              aria-hidden="true"
-            >
-              <defs>
-                <path id="endRibbonPath" d="M 148 450 Q 464 408 780 450" fill="none" />
-              </defs>
-              <text
-                textAnchor="middle"
-                fill="#b14a72"
-                fontWeight={700}
-                fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
-                fontSize={30}
-              >
-                <textPath href="#endRibbonPath" startOffset="50%">
-                  오늘도 맛있는 즐거움이 가득한 곳
-                </textPath>
-              </text>
-            </svg>
-          </div>
-        </div>
-
-        {/* 창 (window 에셋) — 로고 아래로 내림 */}
-        <div className="absolute inset-x-0 top-[35%] flex justify-center px-6">
-          <div className="w-full max-w-[310px]">
-            <WindowDialog onClose={onRestart}>
-              <div className="w-full text-center">
-                <p className="font-display text-[16px] font-extrabold leading-relaxed text-foreground">
-                  하나의 왕국이 된 빙그레,
-                  <br />
-                  아이스크림 축제를 모두 즐겼어요.
-                </p>
-                <SelectButton onClick={onRestart} label="처음으로" className="mt-4" />
-              </div>
-            </WindowDialog>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
