@@ -140,6 +140,25 @@
     border-color: var(--color-border);
   }
 
+  /*
+   * 모바일 고무줄(rubber-band) 오버스크롤 영역 채우기.
+   * iOS 등에서 위/아래로 당겼을 때 드러나는 거터는 "루트 요소(html)"의 배경만
+   * 칠해진다. 화면별 가장자리 색(위→아래)을 --page-top / --page-bottom 변수로 받아
+   * 세로 그라데이션을 깔면, 핑크 여백 대신 그 화면이 위아래로 연장된 것처럼 보인다.
+   * (변수는 App에서 현재 단계에 맞춰 갱신한다)
+   */
+  html {
+    /* 기본값은 첫 화면(main)의 상/하단 색 — 단계 전환 전 한 프레임의 색 튐 방지 */
+    background-color: var(--page-bottom, #8caa4a);
+    background-image: linear-gradient(
+      to bottom,
+      var(--page-top, #62a4fa),
+      var(--page-bottom, #8caa4a)
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
   body {
     color: var(--color-foreground);
     font-family: var(--font-display);

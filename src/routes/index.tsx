@@ -46,6 +46,19 @@ function usePreloadAssets() {
   }, []);
 }
 
+// 화면별 위/아래 가장자리 색 — 오버스크롤 거터를 이 색으로 채워 화면이 연장된 것처럼 보이게.
+// (각 배경 이미지의 실제 상/하단 평균색을 샘플링한 값)
+const PAGE_BG: Record<Step, { top: string; bottom: string }> = {
+  main: { top: "#62a4fa", bottom: "#8caa4a" }, // main_bg (하늘→잔디)
+  letter: { top: "#62a4fa", bottom: "#8caa4a" }, // main_bg
+  map: { top: "#208abe", bottom: "#449985" }, // festival_bg
+  select: { top: "#b5e3fe", bottom: "#b5e3fe" }, // 축제 블루 배경
+  shoot: { top: "#b5e3fe", bottom: "#b5e3fe" },
+  result: { top: "#b5e3fe", bottom: "#b5e3fe" },
+  draw: { top: "#b5e3fe", bottom: "#b5e3fe" },
+  end: { top: "#a46fb6", bottom: "#8d605a" }, // end_bg (노을→땅)
+};
+
 function App() {
   usePreloadAssets();
   const [step, setStep] = useState<Step>("main");
@@ -53,6 +66,14 @@ function App() {
   const [shots, setShots] = useState<string[]>([]);
   const [inv, setInv] = useState<Inventory>(EMPTY_INVENTORY);
   const [mapIntroSeen, setMapIntroSeen] = useState(false);
+
+  // 현재 화면에 맞춰 오버스크롤 거터 색(html 배경 변수)을 갱신.
+  useEffect(() => {
+    const { top, bottom } = PAGE_BG[step];
+    const root = document.documentElement;
+    root.style.setProperty("--page-top", top);
+    root.style.setProperty("--page-bottom", bottom);
+  }, [step]);
 
   const restart = () => {
     setShots([]);
