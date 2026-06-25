@@ -99,6 +99,11 @@ export function PlazaBoard({
                   />
                   <div className="px-2 py-2">
                     <p className="truncate text-[13px] font-bold text-amber-900">{p.title}</p>
+                    {p.author && (
+                      <p className="mt-0.5 truncate text-[11px] font-semibold text-primary/90">
+                        🏷️ {p.author}
+                      </p>
+                    )}
                     <p className="mt-0.5 text-[10px] text-muted-foreground">
                       {active && <span className="mr-1 font-bold text-primary">내 글 ·</span>}
                       {timeAgo(p.createdAt)}

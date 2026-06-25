@@ -488,6 +488,7 @@ export function ResultScreen({
   const [error, setError] = useState<string | null>(null);
   const [bragging, setBragging] = useState(false); // 자랑하기 모달 열림
   const [postTitle, setPostTitle] = useState("");
+  const [postAuthor, setPostAuthor] = useState(""); // 소속/이름 (선택)
   const [posting, setPosting] = useState(false);
   const [postErr, setPostErr] = useState<string | null>(null);
   const editorRef = useRef<EditorHandle>(null);
@@ -587,9 +588,12 @@ export function ResultScreen({
     setPostErr(null);
     try {
       const small = await downscaleDataUrl(url);
-      const res = await createPostFn({ data: { title, image: small, frame: frameKey } });
+      const res = await createPostFn({
+        data: { title, image: small, frame: frameKey, author: postAuthor.trim() },
+      });
       setBragging(false);
       setPostTitle("");
+      setPostAuthor("");
       onPosted(res.id);
     } catch (e) {
       console.error(e);
@@ -659,24 +663,22 @@ export function ResultScreen({
           ))}
         </div>
 
-        {/* 주민들에게 자랑하기 — select_note(크림 노트) 위 글자 오버레이 → 광장 게시판 업로드 */}
-        <button
-          onClick={() => {
-            setPostErr(null);
-            setBragging(true);
-          }}
-          disabled={!stripUrl}
-          aria-label="주민들에게 자랑하기"
-          className="relative block w-full select-none transition active:scale-95 disabled:opacity-40"
-        >
-          <img src={noteSrc} alt="" draggable={false} className="w-full select-none" />
-          <span
-            className="absolute inset-0 flex items-center justify-center px-[14%] text-center font-display font-extrabold text-[#9c5a3c]"
-            style={{ fontSize: "clamp(14px, 4.3vw, 18px)" }}
+        {/* 주민들에게 자랑하기 — back_button(풀폭 크림 버튼) 위 중앙 오버레이 → 광장 게시판 업로드 */}
+        <div className="relative w-full select-none">
+          <img src={backBar} alt="" draggable={false} className="w-full select-none" />
+          <button
+            onClick={() => {
+              setPostErr(null);
+              setBragging(true);
+            }}
+            disabled={!stripUrl}
+            aria-label="주민들에게 자랑하기"
+            className="absolute inset-0 flex items-center justify-center rounded-2xl text-center font-display font-extrabold text-[#9c5a3c] transition active:scale-95 disabled:opacity-40"
+            style={{ fontSize: "clamp(15px, 4.5vw, 19px)" }}
           >
             📢 주민들에게 자랑하기
-          </span>
-        </button>
+          </button>
+        </div>
 
         {/* 축제로 돌아가기 — back_button(풀폭 크림 버튼) 위 중앙 오버레이 */}
         <div className="relative w-full select-none">
@@ -727,6 +729,16 @@ export function ResultScreen({
             />
             <div className="mt-1 text-right text-[10px] text-muted-foreground">
               {postTitle.length}/40
+            </div>
+            <input
+              value={postAuthor}
+              onChange={(e) => setPostAuthor(e.target.value)}
+              maxLength={24}
+              placeholder="소속 또는 이름 (선택) 예) 빙그레 마을 · 콩순이"
+              className="mt-2 w-full rounded-xl border-2 border-border bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <div className="mt-1 text-right text-[10px] text-muted-foreground">
+              {postAuthor.length}/24
             </div>
             {postErr && <p className="mt-1 text-center text-xs text-destructive">{postErr}</p>}
             <div className="mt-3 flex gap-2">

@@ -11,6 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
 export type PlazaPost = {
   id: string;
   title: string;
+  author: string; // 소속/이름 (선택)
   image: string; // 축소된 JPEG data URL
   frame: string;
   createdAt: number;
@@ -19,6 +20,7 @@ export type PlazaPost = {
 const KEY = "plaza:posts";
 const MAX_POSTS = 60; // 게시판에 보관/노출하는 최신 게시물 수
 const MAX_TITLE = 40;
+const MAX_AUTHOR = 24;
 const MAX_IMAGE_CHARS = 900_000; // data URL 길이 상한(약 650KB) — 과대 업로드 차단
 
 type Store = {
@@ -83,18 +85,24 @@ export const listPostsFn = createServerFn({ method: "GET" }).handler(async () =>
 
 // 게시물 등록 — 결과 화면 "주민들에게 자랑하기"에서 호출.
 export const createPostFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { title: string; image: string; frame?: string }) => {
+  .inputValidator((d: { title: string; image: string; frame?: string; author?: string }) => {
     const title = (d?.title ?? "").trim().slice(0, MAX_TITLE);
     const image = d?.image ?? "";
     if (!title) throw new Error("제목을 입력해주세요.");
     if (!image.startsWith("data:image/")) throw new Error("이미지 형식이 올바르지 않습니다.");
     if (image.length > MAX_IMAGE_CHARS) throw new Error("이미지 용량이 너무 큽니다.");
-    return { title, image, frame: (d?.frame ?? "").slice(0, 40) };
+    return {
+      title,
+      image,
+      frame: (d?.frame ?? "").slice(0, 40),
+      author: (d?.author ?? "").trim().slice(0, MAX_AUTHOR),
+    };
   })
   .handler(async ({ data }) => {
     const post: PlazaPost = {
       id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       title: data.title,
+      author: data.author,
       image: data.image,
       frame: data.frame,
       createdAt: Date.now(),
