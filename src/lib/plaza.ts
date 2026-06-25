@@ -15,9 +15,11 @@ export type PlazaPost = {
   image: string; // 축소된 JPEG data URL
   frame: string;
   createdAt: number;
+  likes: number; // 누적 좋아요 수 (별도 저장소에서 list 시 병합)
 };
 
 const KEY = "plaza:posts";
+const KEY_LIKES = "plaza:likes"; // 좋아요 카운트 해시(field=게시물 id)
 const MAX_POSTS = 60; // 게시판에 보관/노출하는 최신 게시물 수
 const MAX_TITLE = 40;
 const MAX_AUTHOR = 24;
@@ -28,27 +30,39 @@ type Store = {
   list: (limit: number) => Promise<PlazaPost[]>;
   remove: (id: string) => Promise<void>;
   clear: () => Promise<void>;
+  like: (id: string, delta: number) => Promise<number>; // 새 누적 수 반환
 };
 
 // 인메모리 저장소 — globalThis에 보관해 HMR/모듈 재평가에도 유지.
 function memoryStore(): Store {
-  const g = globalThis as unknown as { __plazaPosts?: PlazaPost[] };
+  const g = globalThis as unknown as {
+    __plazaPosts?: PlazaPost[];
+    __plazaLikes?: Record<string, number>;
+  };
   g.__plazaPosts ??= [];
+  g.__plazaLikes ??= {};
   const arr = g.__plazaPosts;
+  const likes = g.__plazaLikes;
   return {
     async add(p) {
       arr.unshift(p);
       if (arr.length > MAX_POSTS) arr.length = MAX_POSTS;
     },
     async list(limit) {
-      return arr.slice(0, limit);
+      return arr.slice(0, limit).map((p) => ({ ...p, likes: likes[p.id] ?? 0 }));
     },
     async remove(id) {
       const i = arr.findIndex((p) => p.id === id);
       if (i >= 0) arr.splice(i, 1);
+      delete likes[id];
     },
     async clear() {
       arr.length = 0;
+      for (const k of Object.keys(likes)) delete likes[k];
+    },
+    async like(id, delta) {
+      likes[id] = Math.max(0, (likes[id] ?? 0) + delta);
+      return likes[id];
     },
   };
 }
@@ -62,10 +76,12 @@ function redisStore(redis: { send: (cmd: string, args: string[]) => Promise<unkn
     },
     async list(limit) {
       const rows = (await redis.send("LRANGE", [KEY, "0", String(limit - 1)])) as string[];
+      const likeMap = await readLikes(redis);
       const out: PlazaPost[] = [];
       for (const r of rows ?? []) {
         try {
-          out.push(JSON.parse(r) as PlazaPost);
+          const p = JSON.parse(r) as PlazaPost;
+          out.push({ ...p, likes: likeMap[p.id] ?? 0 });
         } catch {
           /* 손상된 항목은 무시 */
         }
@@ -85,11 +101,35 @@ function redisStore(redis: { send: (cmd: string, args: string[]) => Promise<unkn
       }
       await redis.send("DEL", [KEY]);
       if (kept.length) await redis.send("RPUSH", [KEY, ...kept]);
+      await redis.send("HDEL", [KEY_LIKES, id]);
     },
     async clear() {
       await redis.send("DEL", [KEY]);
+      await redis.send("DEL", [KEY_LIKES]);
+    },
+    async like(id, delta) {
+      const n = Number(await redis.send("HINCRBY", [KEY_LIKES, id, String(delta)]));
+      if (n < 0) {
+        await redis.send("HSET", [KEY_LIKES, id, "0"]);
+        return 0;
+      }
+      return n;
     },
   };
+}
+
+// HGETALL 결과(배열/객체 양쪽 형태)를 {id: count}로 정규화.
+async function readLikes(redis: {
+  send: (cmd: string, args: string[]) => Promise<unknown>;
+}): Promise<Record<string, number>> {
+  const raw = await redis.send("HGETALL", [KEY_LIKES]);
+  const map: Record<string, number> = {};
+  if (Array.isArray(raw)) {
+    for (let i = 0; i + 1 < raw.length; i += 2) map[String(raw[i])] = Number(raw[i + 1]) || 0;
+  } else if (raw && typeof raw === "object") {
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) map[k] = Number(v) || 0;
+  }
+  return map;
 }
 
 function getStore(): Store {
@@ -132,9 +172,20 @@ export const createPostFn = createServerFn({ method: "POST" })
       image: data.image,
       frame: data.frame,
       createdAt: Date.now(),
+      likes: 0,
     };
     await getStore().add(post);
     return { ok: true as const, id: post.id };
+  });
+
+// 좋아요 토글 — like=true면 +1, false면 -1. 누구인지는 클라이언트(localStorage)가 관리하고
+// 서버는 누적 수만 증감한다. 새 누적 수를 돌려준다.
+export const likePostFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string; like: boolean }) => ({ id: d?.id ?? "", like: !!d?.like }))
+  .handler(async ({ data }) => {
+    if (!data.id) throw new Error("게시물 id가 필요합니다.");
+    const likes = await getStore().like(data.id, data.like ? 1 : -1);
+    return { ok: true as const, likes };
   });
 
 // ─────────────── 어드민(/admin) — 게시물 삭제 관리 ───────────────

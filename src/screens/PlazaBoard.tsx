@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { FestivalSelectBg } from "@/components/common";
-import { type PlazaPost, listPostsFn } from "@/lib/plaza";
+import { type PlazaPost, likePostFn, listPostsFn } from "@/lib/plaza";
 
 // 상대 시간 표기 (방금/N분 전/N시간 전/N일 전).
 function timeAgo(ts: number): string {
@@ -13,6 +13,25 @@ function timeAgo(ts: number): string {
   return `${Math.floor(h / 24)}일 전`;
 }
 
+// "한 명이 한 번"은 디바이스 localStorage로 관리(서버는 누적 수만 증감).
+const LIKED_KEY = "plaza:liked";
+function loadLiked(): Set<string> {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(LIKED_KEY) || "[]") as string[]);
+  } catch {
+    return new Set();
+  }
+}
+function saveLiked(s: Set<string>) {
+  try {
+    localStorage.setItem(LIKED_KEY, JSON.stringify([...s]));
+  } catch {
+    /* 저장 불가(프라이빗 모드 등) 시 무시 */
+  }
+}
+
+type SortKey = "new" | "likes";
+
 // 광장 게시판 (스토리보드 — 주민 자랑 피드). 주민들이 올린 인생네컷을 모아 보여준다.
 export function PlazaBoard({
   onBack,
@@ -24,6 +43,8 @@ export function PlazaBoard({
   const [posts, setPosts] = useState<PlazaPost[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sort, setSort] = useState<SortKey>("new");
+  const [liked, setLiked] = useState<Set<string>>(new Set());
 
   const load = () => {
     setLoading(true);
@@ -37,7 +58,52 @@ export function PlazaBoard({
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    setLiked(loadLiked());
+    load();
+  }, []);
+
+  // 좋아요 토글 — 낙관적 업데이트 후 서버 누적 수로 보정.
+  const toggleLike = async (id: string) => {
+    const willLike = !liked.has(id);
+    setLiked((prev) => {
+      const n = new Set(prev);
+      if (willLike) n.add(id);
+      else n.delete(id);
+      saveLiked(n);
+      return n;
+    });
+    setPosts(
+      (prev) =>
+        prev?.map((p) =>
+          p.id === id ? { ...p, likes: Math.max(0, p.likes + (willLike ? 1 : -1)) } : p,
+        ) ?? prev,
+    );
+    try {
+      const res = await likePostFn({ data: { id, like: willLike } });
+      setPosts((prev) => prev?.map((p) => (p.id === id ? { ...p, likes: res.likes } : p)) ?? prev);
+    } catch {
+      // 실패 시 롤백
+      setLiked((prev) => {
+        const n = new Set(prev);
+        if (willLike) n.delete(id);
+        else n.add(id);
+        saveLiked(n);
+        return n;
+      });
+      setPosts(
+        (prev) =>
+          prev?.map((p) =>
+            p.id === id ? { ...p, likes: Math.max(0, p.likes + (willLike ? -1 : 1)) } : p,
+          ) ?? prev,
+      );
+    }
+  };
+
+  const shown =
+    posts && sort === "likes"
+      ? [...posts].sort((a, b) => b.likes - a.likes || b.createdAt - a.createdAt)
+      : posts;
 
   return (
     <FestivalSelectBg onBack={onBack}>
@@ -49,11 +115,30 @@ export function PlazaBoard({
           주민들이 자랑한 인생네컷을 구경해보세요!
         </p>
 
-        <div className="flex justify-center">
+        {/* 좌상단 정렬 탭 + 우측 새로고침 */}
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1 rounded-full bg-white/70 p-1 shadow-sm ring-1 ring-border">
+            {(
+              [
+                ["new", "최신순"],
+                ["likes", "좋아요순"],
+              ] as [SortKey, string][]
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setSort(k)}
+                className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                  sort === k ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <button
             onClick={load}
             disabled={loading}
-            className="rounded-full bg-white/85 px-4 py-1.5 text-xs font-bold text-primary shadow ring-1 ring-white transition active:scale-95 disabled:opacity-50"
+            className="rounded-full bg-white/85 px-3 py-1.5 text-xs font-bold text-primary shadow ring-1 ring-white transition active:scale-95 disabled:opacity-50"
           >
             {loading ? "새로고침 중…" : "🔄 새로고침"}
           </button>
@@ -82,8 +167,9 @@ export function PlazaBoard({
           </div>
         ) : (
           <div className="grid grid-cols-2 items-start gap-3">
-            {posts.map((p) => {
+            {shown!.map((p) => {
               const active = p.id === highlightId;
+              const isLiked = liked.has(p.id);
               return (
                 <div
                   key={p.id}
@@ -104,10 +190,26 @@ export function PlazaBoard({
                         🏷️ {p.author}
                       </p>
                     )}
-                    <p className="mt-0.5 text-[10px] text-muted-foreground">
-                      {active && <span className="mr-1 font-bold text-primary">내 글 ·</span>}
-                      {timeAgo(p.createdAt)}
-                    </p>
+                    <div className="mt-1 flex items-end justify-between gap-1">
+                      <p className="text-[10px] text-muted-foreground">
+                        {active && <span className="mr-1 font-bold text-primary">내 글 ·</span>}
+                        {timeAgo(p.createdAt)}
+                      </p>
+                      {/* 우하단 좋아요 버튼 (한 번 더 누르면 취소) */}
+                      <button
+                        onClick={() => toggleLike(p.id)}
+                        aria-label={isLiked ? "좋아요 취소" : "좋아요"}
+                        aria-pressed={isLiked}
+                        className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[12px] font-bold transition active:scale-90 ${
+                          isLiked
+                            ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                            : "bg-secondary/50 text-muted-foreground ring-1 ring-border"
+                        }`}
+                      >
+                        <span className="leading-none">{isLiked ? "❤️" : "🤍"}</span>
+                        {p.likes}
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

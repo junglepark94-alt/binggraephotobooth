@@ -161,7 +161,7 @@ function AdminPage() {
                   <p className="truncate text-sm font-bold text-slate-800">{p.title}</p>
                   {p.author && <p className="truncate text-xs text-slate-500">🏷️ {p.author}</p>}
                   <p className="mt-0.5 text-[11px] text-slate-400">
-                    {timeAgo(p.createdAt)} · {p.frame || "?"} · {p.id}
+                    {timeAgo(p.createdAt)} · ❤️{p.likes ?? 0} · {p.frame || "?"} · {p.id}
                   </p>
                 </div>
                 <button
