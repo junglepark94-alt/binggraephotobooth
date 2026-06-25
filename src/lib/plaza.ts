@@ -21,7 +21,10 @@ export type PlazaPost = {
 
 const KEY = "plaza:posts";
 const KEY_LIKES = "plaza:likes"; // 좋아요 카운트 해시(field=게시물 id)
-const MAX_POSTS = 60; // 게시판에 보관/노출하는 최신 게시물 수
+const MAX_POSTS = 200; // 서버에 보관하는 최신 게시물 수(롤링). 화면엔 페이지네이션으로 노출
+const PAGE_LIMIT = 60; // 한 번에 불러오는 최대 수(무한 스크롤 페이지 크기)
+
+export type SortKey = "new" | "likes";
 const MAX_TITLE = 40;
 const MAX_AUTHOR = 24;
 const MAX_FRAME = 40;
@@ -29,11 +32,18 @@ const MAX_IMAGE_CHARS = 900_000; // data URL 길이 상한(약 650KB) — 과대
 
 type Store = {
   add: (p: PlazaPost) => Promise<void>;
-  list: (limit: number) => Promise<PlazaPost[]>;
+  list: (offset: number, limit: number, sort: SortKey) => Promise<PlazaPost[]>;
+  count: () => Promise<number>;
   remove: (id: string) => Promise<void>;
   clear: () => Promise<void>;
   like: (id: string, delta: number) => Promise<number>; // 새 누적 수 반환
 };
+
+function sortPosts(posts: PlazaPost[], sort: SortKey): PlazaPost[] {
+  // "new"는 입력(최신순) 그대로, "likes"는 좋아요 내림차순(동률 시 최신순).
+  if (sort !== "likes") return posts;
+  return [...posts].sort((a, b) => b.likes - a.likes || b.createdAt - a.createdAt);
+}
 
 // 인메모리 저장소 — globalThis에 보관해 HMR/모듈 재평가에도 유지.
 function memoryStore(): Store {
@@ -50,8 +60,12 @@ function memoryStore(): Store {
       arr.unshift(p);
       if (arr.length > MAX_POSTS) arr.length = MAX_POSTS;
     },
-    async list(limit) {
-      return arr.slice(0, limit).map((p) => ({ ...p, likes: likes[p.id] ?? 0 }));
+    async list(offset, limit, sort) {
+      const merged = arr.map((p) => ({ ...p, likes: likes[p.id] ?? 0 }));
+      return sortPosts(merged, sort).slice(offset, offset + limit);
+    },
+    async count() {
+      return arr.length;
     },
     async remove(id) {
       const i = arr.findIndex((p) => p.id === id);
@@ -76,19 +90,35 @@ function redisStore(redis: { send: (cmd: string, args: string[]) => Promise<unkn
       await redis.send("LPUSH", [KEY, JSON.stringify(p)]);
       await redis.send("LTRIM", [KEY, "0", String(MAX_POSTS - 1)]);
     },
-    async list(limit) {
-      const rows = (await redis.send("LRANGE", [KEY, "0", String(limit - 1)])) as string[];
+    async list(offset, limit, sort) {
       const likeMap = await readLikes(redis);
-      const out: PlazaPost[] = [];
-      for (const r of rows ?? []) {
-        try {
-          const p = JSON.parse(r) as PlazaPost;
-          out.push({ ...p, likes: likeMap[p.id] ?? 0 });
-        } catch {
-          /* 손상된 항목은 무시 */
+      const parse = (rows: string[]) => {
+        const out: PlazaPost[] = [];
+        for (const r of rows ?? []) {
+          try {
+            const p = JSON.parse(r) as PlazaPost;
+            out.push({ ...p, likes: likeMap[p.id] ?? 0 });
+          } catch {
+            /* 손상된 항목은 무시 */
+          }
         }
+        return out;
+      };
+      if (sort === "likes") {
+        // 좋아요순은 전체를 읽어 정렬 후 잘라야 정확하다(최대 200개라 부담 없음).
+        const all = parse((await redis.send("LRANGE", [KEY, "0", "-1"])) as string[]);
+        return sortPosts(all, sort).slice(offset, offset + limit);
       }
-      return out;
+      // 최신순은 LIST 순서 그대로 → 범위만 읽으면 된다.
+      const rows = (await redis.send("LRANGE", [
+        KEY,
+        String(offset),
+        String(offset + limit - 1),
+      ])) as string[];
+      return parse(rows);
+    },
+    async count() {
+      return Number(await redis.send("LLEN", [KEY])) || 0;
     },
     async remove(id) {
       // LIST엔 id 인덱스가 없으니 일치 항목의 원본 문자열을 찾아 LREM으로 원자 삭제(순서 유지).
@@ -174,10 +204,21 @@ function rateLimit(bucket: string, max: number, windowMs: number): boolean {
   return true;
 }
 
-// 최신 게시물 목록 — 게시판 화면에서 호출.
-export const listPostsFn = createServerFn({ method: "GET" }).handler(async () => {
-  return (await getStore()).list(MAX_POSTS);
-});
+// 게시물 페이지 — 무한 스크롤(offset/limit) + 정렬(sort). total도 함께 돌려준다.
+export const listPostsFn = createServerFn({ method: "GET" })
+  .inputValidator((d: { offset?: number; limit?: number; sort?: string }) => ({
+    offset: Math.max(0, Math.floor(d?.offset ?? 0)),
+    limit: Math.min(PAGE_LIMIT, Math.max(1, Math.floor(d?.limit ?? PAGE_LIMIT))),
+    sort: (d?.sort === "likes" ? "likes" : "new") as SortKey,
+  }))
+  .handler(async ({ data }) => {
+    const store = await getStore();
+    const [posts, total] = await Promise.all([
+      store.list(data.offset, data.limit, data.sort),
+      store.count(),
+    ]);
+    return { posts, total };
+  });
 
 // 게시물 등록 — 결과 화면 "주민들에게 자랑하기"에서 호출.
 export const createPostFn = createServerFn({ method: "POST" })
@@ -238,12 +279,31 @@ function assertAdmin(password: string) {
   if ((password ?? "") !== expected) throw new Error("UNAUTHORIZED");
 }
 
-// 비밀번호 확인(로그인) — 통과하면 게시물 목록을 함께 돌려준다.
+// 비밀번호 확인(로그인) — 통과하면 첫 페이지 + total을 함께 돌려준다.
 export const adminLoginFn = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => ({ password: d?.password ?? "" }))
   .handler(async ({ data }) => {
     assertAdmin(data.password);
-    return { ok: true as const, posts: await (await getStore()).list(MAX_POSTS) };
+    const store = await getStore();
+    const [posts, total] = await Promise.all([store.list(0, PAGE_LIMIT, "new"), store.count()]);
+    return { ok: true as const, posts, total };
+  });
+
+// 어드민 추가 페이지(더 보기).
+export const adminListFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { password: string; offset?: number; limit?: number }) => ({
+    password: d?.password ?? "",
+    offset: Math.max(0, Math.floor(d?.offset ?? 0)),
+    limit: Math.min(PAGE_LIMIT, Math.max(1, Math.floor(d?.limit ?? PAGE_LIMIT))),
+  }))
+  .handler(async ({ data }) => {
+    assertAdmin(data.password);
+    const store = await getStore();
+    const [posts, total] = await Promise.all([
+      store.list(data.offset, data.limit, "new"),
+      store.count(),
+    ]);
+    return { ok: true as const, posts, total };
   });
 
 // 단일 게시물 삭제.

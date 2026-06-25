@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { type PlazaPost, adminLoginFn, clearPostsFn, deletePostFn } from "@/lib/plaza";
+import { type PlazaPost, adminListFn, adminLoginFn, clearPostsFn, deletePostFn } from "@/lib/plaza";
+
+const PAGE = 60;
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -23,7 +25,9 @@ function AdminPage() {
   const [pw, setPw] = useState("");
   const [authed, setAuthed] = useState(false);
   const [posts, setPosts] = useState<PlazaPost[]>([]);
+  const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -34,6 +38,7 @@ function AdminPage() {
       const res = await adminLoginFn({ data: { password: pw } });
       setAuthed(true);
       setPosts(res.posts);
+      setTotal(res.total);
     } catch {
       setError("비밀번호가 올바르지 않습니다.");
     } finally {
@@ -47,10 +52,28 @@ function AdminPage() {
     try {
       const res = await adminLoginFn({ data: { password: pw } });
       setPosts(res.posts);
+      setTotal(res.total);
     } catch {
       setError("목록을 불러오지 못했습니다.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    setError(null);
+    try {
+      const res = await adminListFn({ data: { password: pw, offset: posts.length, limit: PAGE } });
+      setTotal(res.total);
+      setPosts((prev) => {
+        const seen = new Set(prev.map((p) => p.id));
+        return [...prev, ...res.posts.filter((p) => !seen.has(p.id))];
+      });
+    } catch {
+      setError("더 불러오지 못했습니다.");
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -61,6 +84,7 @@ function AdminPage() {
     try {
       await deletePostFn({ data: { password: pw, id } });
       setPosts((a) => a.filter((p) => p.id !== id));
+      setTotal((t) => Math.max(0, t - 1));
       setMsg("게시물을 삭제했습니다.");
     } catch {
       setError("삭제하지 못했습니다.");
@@ -76,6 +100,7 @@ function AdminPage() {
     try {
       await clearPostsFn({ data: { password: pw } });
       setPosts([]);
+      setTotal(0);
       setMsg("모든 게시물을 삭제했습니다.");
     } catch {
       setError("전체 삭제에 실패했습니다.");
@@ -118,7 +143,9 @@ function AdminPage() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-lg font-extrabold text-slate-800">
             광장 게시판 관리자
-            <span className="ml-2 text-sm font-medium text-slate-500">({posts.length}개)</span>
+            <span className="ml-2 text-sm font-medium text-slate-500">
+              ({posts.length}/{total})
+            </span>
           </h1>
           <div className="flex gap-2">
             <button
@@ -158,36 +185,49 @@ function AdminPage() {
             게시물이 없습니다.
           </div>
         ) : (
-          <ul className="mt-4 space-y-3">
-            {posts.map((p) => (
-              <li
-                key={p.id}
-                className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow ring-1 ring-slate-200"
-              >
-                <img
-                  src={p.image}
-                  alt={p.title}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-20 w-16 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-slate-800">{p.title}</p>
-                  {p.author && <p className="truncate text-xs text-slate-500">🏷️ {p.author}</p>}
-                  <p className="mt-0.5 text-[11px] text-slate-400">
-                    {timeAgo(p.createdAt)} · ❤️{p.likes ?? 0} · {p.frame || "?"} · {p.id}
-                  </p>
-                </div>
-                <button
-                  onClick={() => remove(p.id)}
-                  disabled={busy}
-                  className="shrink-0 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 ring-1 ring-red-200 transition active:scale-95 disabled:opacity-50"
+          <>
+            <ul className="mt-4 space-y-3">
+              {posts.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow ring-1 ring-slate-200"
                 >
-                  삭제
+                  <img
+                    src={p.image}
+                    alt={p.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-20 w-16 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-slate-800">{p.title}</p>
+                    {p.author && <p className="truncate text-xs text-slate-500">🏷️ {p.author}</p>}
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {timeAgo(p.createdAt)} · ❤️{p.likes ?? 0} · {p.frame || "?"} · {p.id}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => remove(p.id)}
+                    disabled={busy}
+                    className="shrink-0 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 ring-1 ring-red-200 transition active:scale-95 disabled:opacity-50"
+                  >
+                    삭제
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {posts.length < total && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="rounded-lg bg-white px-5 py-2 text-sm font-bold text-slate-700 shadow ring-1 ring-slate-200 transition active:scale-95 disabled:opacity-50"
+                >
+                  {loadingMore ? "불러오는 중…" : `더 보기 (${total - posts.length}개 남음)`}
                 </button>
-              </li>
-            ))}
-          </ul>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
