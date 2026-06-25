@@ -26,6 +26,8 @@ const MAX_IMAGE_CHARS = 900_000; // data URL 길이 상한(약 650KB) — 과대
 type Store = {
   add: (p: PlazaPost) => Promise<void>;
   list: (limit: number) => Promise<PlazaPost[]>;
+  remove: (id: string) => Promise<void>;
+  clear: () => Promise<void>;
 };
 
 // 인메모리 저장소 — globalThis에 보관해 HMR/모듈 재평가에도 유지.
@@ -40,6 +42,13 @@ function memoryStore(): Store {
     },
     async list(limit) {
       return arr.slice(0, limit);
+    },
+    async remove(id) {
+      const i = arr.findIndex((p) => p.id === id);
+      if (i >= 0) arr.splice(i, 1);
+    },
+    async clear() {
+      arr.length = 0;
     },
   };
 }
@@ -62,6 +71,23 @@ function redisStore(redis: { send: (cmd: string, args: string[]) => Promise<unkn
         }
       }
       return out;
+    },
+    async remove(id) {
+      // LIST에는 id 인덱스가 없으니 전체를 읽어 해당 id만 빼고 다시 쓴다(순서 유지).
+      const rows = (await redis.send("LRANGE", [KEY, "0", "-1"])) as string[];
+      const kept: string[] = [];
+      for (const r of rows ?? []) {
+        try {
+          if ((JSON.parse(r) as PlazaPost).id !== id) kept.push(r);
+        } catch {
+          /* 손상된 항목은 버린다 */
+        }
+      }
+      await redis.send("DEL", [KEY]);
+      if (kept.length) await redis.send("RPUSH", [KEY, ...kept]);
+    },
+    async clear() {
+      await redis.send("DEL", [KEY]);
     },
   };
 }
@@ -109,4 +135,41 @@ export const createPostFn = createServerFn({ method: "POST" })
     };
     await getStore().add(post);
     return { ok: true as const, id: post.id };
+  });
+
+// ─────────────── 어드민(/admin) — 게시물 삭제 관리 ───────────────
+// 비밀번호는 서버 핸들러 안에서만 비교되므로 클라이언트 번들에 노출되지 않는다.
+// 운영 시 ADMIN_PASSWORD 환경변수로 덮어쓸 수 있다(없으면 기본값 사용).
+function assertAdmin(password: string) {
+  const expected = process.env.ADMIN_PASSWORD ?? "박종걸1!";
+  if ((password ?? "") !== expected) throw new Error("UNAUTHORIZED");
+}
+
+// 비밀번호 확인(로그인) — 통과하면 게시물 목록을 함께 돌려준다.
+export const adminLoginFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { password: string }) => ({ password: d?.password ?? "" }))
+  .handler(async ({ data }) => {
+    assertAdmin(data.password);
+    return { ok: true as const, posts: await getStore().list(MAX_POSTS) };
+  });
+
+// 단일 게시물 삭제.
+export const deletePostFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { password: string; id: string }) => ({
+    password: d?.password ?? "",
+    id: d?.id ?? "",
+  }))
+  .handler(async ({ data }) => {
+    assertAdmin(data.password);
+    await getStore().remove(data.id);
+    return { ok: true as const };
+  });
+
+// 전체 삭제.
+export const clearPostsFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { password: string }) => ({ password: d?.password ?? "" }))
+  .handler(async ({ data }) => {
+    assertAdmin(data.password);
+    await getStore().clear();
+    return { ok: true as const };
   });
