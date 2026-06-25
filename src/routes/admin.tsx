@@ -122,6 +122,18 @@ function AdminPage() {
           </h1>
           <div className="flex gap-2">
             <button
+              onClick={() => {
+                setAuthed(false);
+                setPw("");
+                setPosts([]);
+                setMsg(null);
+                setError(null);
+              }}
+              className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow ring-1 ring-slate-200 transition active:scale-95"
+            >
+              로그아웃
+            </button>
+            <button
               onClick={refresh}
               disabled={busy}
               className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow ring-1 ring-slate-200 transition active:scale-95 disabled:opacity-50"
@@ -155,6 +167,8 @@ function AdminPage() {
                 <img
                   src={p.image}
                   alt={p.title}
+                  loading="lazy"
+                  decoding="async"
                   className="h-20 w-16 shrink-0 rounded-lg object-cover ring-1 ring-slate-200"
                 />
                 <div className="min-w-0 flex-1">

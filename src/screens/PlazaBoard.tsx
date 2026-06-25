@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FestivalSelectBg } from "@/components/common";
 import { type PlazaPost, likePostFn, listPostsFn } from "@/lib/plaza";
 
@@ -45,12 +45,22 @@ export function PlazaBoard({
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<SortKey>("new");
   const [liked, setLiked] = useState<Set<string>>(new Set());
+  const likingRef = useRef<Set<string>>(new Set()); // 처리 중인 좋아요(더블클릭 방지)
 
   const load = () => {
     setLoading(true);
     setError(null);
     listPostsFn()
-      .then((list) => setPosts(list))
+      .then((list) => {
+        setPosts(list);
+        // 더 이상 존재하지 않는(삭제됐거나 밀려난) 글의 liked 표시는 정리한다.
+        setLiked((prev) => {
+          const ids = new Set(list.map((p) => p.id));
+          const next = new Set([...prev].filter((id) => ids.has(id)));
+          if (next.size !== prev.size) saveLiked(next);
+          return next;
+        });
+      })
       .catch(() => {
         setError("게시물을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
         setPosts([]);
@@ -65,6 +75,8 @@ export function PlazaBoard({
 
   // 좋아요 토글 — 낙관적 업데이트 후 서버 누적 수로 보정.
   const toggleLike = async (id: string) => {
+    if (likingRef.current.has(id)) return; // 이전 요청 처리 중이면 무시
+    likingRef.current.add(id);
     const willLike = !liked.has(id);
     setLiked((prev) => {
       const n = new Set(prev);
@@ -97,13 +109,16 @@ export function PlazaBoard({
             p.id === id ? { ...p, likes: Math.max(0, p.likes + (willLike ? -1 : 1)) } : p,
           ) ?? prev,
       );
+    } finally {
+      likingRef.current.delete(id);
     }
   };
 
-  const shown =
-    posts && sort === "likes"
+  const shown: PlazaPost[] = posts
+    ? sort === "likes"
       ? [...posts].sort((a, b) => b.likes - a.likes || b.createdAt - a.createdAt)
-      : posts;
+      : posts
+    : [];
 
   return (
     <FestivalSelectBg onBack={onBack}>
@@ -167,7 +182,7 @@ export function PlazaBoard({
           </div>
         ) : (
           <div className="grid grid-cols-2 items-start gap-3">
-            {shown!.map((p) => {
+            {shown.map((p) => {
               const active = p.id === highlightId;
               const isLiked = liked.has(p.id);
               return (
@@ -181,6 +196,8 @@ export function PlazaBoard({
                     src={p.image}
                     alt={p.title}
                     draggable={false}
+                    loading="lazy"
+                    decoding="async"
                     className="block w-full select-none object-cover"
                   />
                   <div className="px-2 py-2">

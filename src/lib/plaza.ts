@@ -7,6 +7,7 @@
 //
 // dev(`bun run dev`)·prod(`bun run serve.ts`) 모두 Bun 런타임이라 Bun.redis를 그대로 쓴다.
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestIP } from "@tanstack/react-start/server";
 
 export type PlazaPost = {
   id: string;
@@ -23,6 +24,7 @@ const KEY_LIKES = "plaza:likes"; // 좋아요 카운트 해시(field=게시물 i
 const MAX_POSTS = 60; // 게시판에 보관/노출하는 최신 게시물 수
 const MAX_TITLE = 40;
 const MAX_AUTHOR = 24;
+const MAX_FRAME = 40;
 const MAX_IMAGE_CHARS = 900_000; // data URL 길이 상한(약 650KB) — 과대 업로드 차단
 
 type Store = {
@@ -89,18 +91,17 @@ function redisStore(redis: { send: (cmd: string, args: string[]) => Promise<unkn
       return out;
     },
     async remove(id) {
-      // LIST에는 id 인덱스가 없으니 전체를 읽어 해당 id만 빼고 다시 쓴다(순서 유지).
+      // LIST엔 id 인덱스가 없으니 일치 항목의 원본 문자열을 찾아 LREM으로 원자 삭제(순서 유지).
       const rows = (await redis.send("LRANGE", [KEY, "0", "-1"])) as string[];
-      const kept: string[] = [];
       for (const r of rows ?? []) {
         try {
-          if ((JSON.parse(r) as PlazaPost).id !== id) kept.push(r);
+          if ((JSON.parse(r) as PlazaPost).id === id) {
+            await redis.send("LREM", [KEY, "0", r]);
+          }
         } catch {
-          /* 손상된 항목은 버린다 */
+          /* 손상된 항목은 건너뜀 */
         }
       }
-      await redis.send("DEL", [KEY]);
-      if (kept.length) await redis.send("RPUSH", [KEY, ...kept]);
       await redis.send("HDEL", [KEY_LIKES, id]);
     },
     async clear() {
@@ -132,21 +133,50 @@ async function readLikes(redis: {
   return map;
 }
 
-function getStore(): Store {
+// 저장소 선택을 한 번만 수행하고 캐시한다. Bun.redis는 첫 명령 때 지연 연결되므로,
+// 여기서 PING으로 실제 연결을 확인한 뒤 실패하면 인메모리로 폴백한다(연결이 안 될 때
+// 게시판 전체가 throw되는 걸 방지). 동기 호출부는 모두 `await getStore()`로 받는다.
+let storePromise: Promise<Store> | null = null;
+function getStore(): Promise<Store> {
+  if (!storePromise) storePromise = selectStore();
+  return storePromise;
+}
+async function selectStore(): Promise<Store> {
   const bun = (globalThis as unknown as { Bun?: { redis?: unknown } }).Bun;
   if (bun?.redis && process.env.REDIS_URL) {
+    const redis = bun.redis as { send: (cmd: string, args: string[]) => Promise<unknown> };
     try {
-      return redisStore(bun.redis as { send: (cmd: string, args: string[]) => Promise<unknown> });
-    } catch {
-      /* 연결 실패 시 인메모리로 폴백 */
+      await redis.send("PING", []);
+      return redisStore(redis);
+    } catch (e) {
+      console.warn("[plaza] Redis 연결 실패 — 인메모리로 폴백합니다.", e);
     }
   }
   return memoryStore();
 }
 
+// 간단한 인메모리 슬라이딩 윈도우 레이트리밋(IP별) — 자동 스팸 방지용 백스톱.
+function rateLimit(bucket: string, max: number, windowMs: number): boolean {
+  const g = globalThis as unknown as { __plazaRL?: Map<string, number[]> };
+  g.__plazaRL ??= new Map();
+  let ip = "unknown";
+  try {
+    ip = getRequestIP({ xForwardedFor: true }) ?? "unknown";
+  } catch {
+    /* 요청 컨텍스트 밖이면 unknown */
+  }
+  const key = `${bucket}:${ip}`;
+  const now = Date.now();
+  const hits = (g.__plazaRL.get(key) ?? []).filter((t) => now - t < windowMs);
+  if (hits.length >= max) return false;
+  hits.push(now);
+  g.__plazaRL.set(key, hits);
+  return true;
+}
+
 // 최신 게시물 목록 — 게시판 화면에서 호출.
 export const listPostsFn = createServerFn({ method: "GET" }).handler(async () => {
-  return getStore().list(MAX_POSTS);
+  return (await getStore()).list(MAX_POSTS);
 });
 
 // 게시물 등록 — 결과 화면 "주민들에게 자랑하기"에서 호출.
@@ -160,11 +190,13 @@ export const createPostFn = createServerFn({ method: "POST" })
     return {
       title,
       image,
-      frame: (d?.frame ?? "").slice(0, 40),
+      frame: (d?.frame ?? "").slice(0, MAX_FRAME),
       author: (d?.author ?? "").trim().slice(0, MAX_AUTHOR),
     };
   })
   .handler(async ({ data }) => {
+    if (!rateLimit("post", 10, 60_000))
+      throw new Error("너무 빠르게 올리고 있어요. 잠시 후 다시 시도해주세요.");
     const post: PlazaPost = {
       id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       title: data.title,
@@ -174,7 +206,7 @@ export const createPostFn = createServerFn({ method: "POST" })
       createdAt: Date.now(),
       likes: 0,
     };
-    await getStore().add(post);
+    await (await getStore()).add(post);
     return { ok: true as const, id: post.id };
   });
 
@@ -184,15 +216,25 @@ export const likePostFn = createServerFn({ method: "POST" })
   .inputValidator((d: { id: string; like: boolean }) => ({ id: d?.id ?? "", like: !!d?.like }))
   .handler(async ({ data }) => {
     if (!data.id) throw new Error("게시물 id가 필요합니다.");
-    const likes = await getStore().like(data.id, data.like ? 1 : -1);
+    if (!rateLimit("like", 60, 60_000)) throw new Error("잠시 후 다시 시도해주세요.");
+    const likes = await (await getStore()).like(data.id, data.like ? 1 : -1);
     return { ok: true as const, likes };
   });
 
 // ─────────────── 어드민(/admin) — 게시물 삭제 관리 ───────────────
 // 비밀번호는 서버 핸들러 안에서만 비교되므로 클라이언트 번들에 노출되지 않는다.
 // 운영 시 ADMIN_PASSWORD 환경변수로 덮어쓸 수 있다(없으면 기본값 사용).
+let warnedNoAdminEnv = false;
 function assertAdmin(password: string) {
-  const expected = process.env.ADMIN_PASSWORD ?? "박종걸1!";
+  const envPw = process.env.ADMIN_PASSWORD;
+  if (!envPw && !warnedNoAdminEnv) {
+    warnedNoAdminEnv = true;
+    // 저장소가 공개일 수 있으므로 소스 하드코딩 기본값에 의존하지 말 것.
+    console.warn(
+      "[plaza] ADMIN_PASSWORD 환경변수가 설정되지 않았습니다. /admin이 소스의 기본 비밀번호로 보호됩니다. 운영에서는 반드시 ADMIN_PASSWORD를 설정하세요.",
+    );
+  }
+  const expected = envPw ?? "박종걸1!";
   if ((password ?? "") !== expected) throw new Error("UNAUTHORIZED");
 }
 
@@ -201,7 +243,7 @@ export const adminLoginFn = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => ({ password: d?.password ?? "" }))
   .handler(async ({ data }) => {
     assertAdmin(data.password);
-    return { ok: true as const, posts: await getStore().list(MAX_POSTS) };
+    return { ok: true as const, posts: await (await getStore()).list(MAX_POSTS) };
   });
 
 // 단일 게시물 삭제.
@@ -212,7 +254,7 @@ export const deletePostFn = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     assertAdmin(data.password);
-    await getStore().remove(data.id);
+    await (await getStore()).remove(data.id);
     return { ok: true as const };
   });
 
@@ -221,6 +263,6 @@ export const clearPostsFn = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => ({ password: d?.password ?? "" }))
   .handler(async ({ data }) => {
     assertAdmin(data.password);
-    await getStore().clear();
+    await (await getStore()).clear();
     return { ok: true as const };
   });
