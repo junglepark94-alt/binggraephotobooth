@@ -25,6 +25,23 @@ export async function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+// 광장 게시판 업로드용 — data URL을 지정 폭으로 축소한 JPEG data URL로 변환.
+// (원본 스트립은 수천 px라 그대로 올리면 무거움 → 게시판 표시에 충분한 크기로 줄인다)
+export async function downscaleDataUrl(src: string, maxW = 460, quality = 0.8): Promise<string> {
+  const img = await loadImage(src);
+  const scale = Math.min(1, maxW / img.naturalWidth);
+  const w = Math.max(1, Math.round(img.naturalWidth * scale));
+  const h = Math.max(1, Math.round(img.naturalHeight * scale));
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#ffffff"; // JPEG는 투명을 지원 안 하므로 흰 배경으로 평탄화
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return c.toDataURL("image/jpeg", quality);
+}
+
 // 슬롯 감지/슬라이스는 정적 프레임 에셋에만 의존하므로 src 기준으로 캐시한다.
 const slotCache = new Map<string, Slot[]>();
 const sliceCache = new Map<string, string[]>();

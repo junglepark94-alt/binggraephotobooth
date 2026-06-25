@@ -28,6 +28,7 @@ export function FestivalMap({
   setInv,
   onPhoto,
   onDraw,
+  onBoard,
   onEnd,
   introSeen,
   onIntroSeen,
@@ -36,6 +37,7 @@ export function FestivalMap({
   setInv: Dispatch<SetStateAction<Inventory>>;
   onPhoto: () => void;
   onDraw: () => void;
+  onBoard: () => void;
   onEnd: () => void;
   introSeen: boolean;
   onIntroSeen: () => void;
@@ -145,6 +147,14 @@ export function FestivalMap({
           className="absolute inset-0 h-full w-full select-none object-cover"
           draggable={false}
         />
+
+        {/* 광장 게시판 (주민들의 자랑 피드 둘러보기) */}
+        <button
+          onClick={onBoard}
+          className="absolute left-3 top-3 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-primary shadow active:scale-95"
+        >
+          📋 광장 게시판
+        </button>
 
         {/* 축제 마치기 (메뉴바는 진행표시 전용이라 별도 버튼) */}
         <button

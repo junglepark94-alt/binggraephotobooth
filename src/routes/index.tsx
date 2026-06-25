@@ -9,6 +9,7 @@ import { SelectScreen } from "@/screens/SelectScreen";
 import { ShootScreen } from "@/screens/ShootScreen";
 import { ResultScreen } from "@/screens/ResultScreen";
 import { DrawScreen } from "@/screens/DrawScreen";
+import { PlazaBoard } from "@/screens/PlazaBoard";
 import { EndScreen } from "@/screens/EndScreen";
 
 export const Route = createFileRoute("/")({
@@ -56,6 +57,7 @@ const PAGE_BG: Record<Step, { top: string; bottom: string }> = {
   shoot: { top: "#b5e3fe", bottom: "#b5e3fe" },
   result: { top: "#b5e3fe", bottom: "#b5e3fe" },
   draw: { top: "#b5e3fe", bottom: "#b5e3fe" },
+  board: { top: "#b5e3fe", bottom: "#b5e3fe" }, // 축제 블루 배경(select_bg)
   end: { top: "#a46fb6", bottom: "#8d605a" }, // end_bg (노을→땅)
 };
 
@@ -66,6 +68,7 @@ function App() {
   const [shots, setShots] = useState<string[]>([]);
   const [inv, setInv] = useState<Inventory>(EMPTY_INVENTORY);
   const [mapIntroSeen, setMapIntroSeen] = useState(false);
+  const [postedId, setPostedId] = useState<string | null>(null);
 
   // 현재 화면에 맞춰 오버스크롤 거터 색(html 배경 변수)을 갱신.
   useEffect(() => {
@@ -96,6 +99,7 @@ function App() {
             setInv={setInv}
             onPhoto={() => setStep("select")}
             onDraw={() => setStep("draw")}
+            onBoard={() => setStep("board")}
             onEnd={() => setStep("end")}
             introSeen={mapIntroSeen}
             onIntroSeen={() => setMapIntroSeen(true)}
@@ -133,11 +137,16 @@ function App() {
               setStep("select");
             }}
             onBackToMap={() => setStep("map")}
+            onPosted={(id) => {
+              setPostedId(id);
+              setStep("board");
+            }}
           />
         )}
         {step === "draw" && (
           <DrawScreen onBack={() => setStep("map")} onEnd={() => setStep("end")} />
         )}
+        {step === "board" && <PlazaBoard onBack={() => setStep("map")} highlightId={postedId} />}
         {step === "end" && <EndScreen onRestart={restart} />}
       </div>
     </div>

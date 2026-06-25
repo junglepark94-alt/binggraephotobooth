@@ -13,10 +13,12 @@ import selectNote from "@/assets/select_note.png";
 import { FestivalSelectBg } from "@/components/common";
 import { FRAMES, type FrameKey } from "@/data/frames";
 import { type Crop, useKeyedCrop, useWhiteKeyed } from "@/lib/imageHooks";
+import { createPostFn } from "@/lib/plaza";
 import {
   type Slot,
   composeStrip,
   detectGreenSlots,
+  downscaleDataUrl,
   fallbackSlots,
   loadImage,
 } from "@/lib/photobooth";
@@ -469,12 +471,14 @@ export function ResultScreen({
   onRetake,
   onChangeFrame,
   onBackToMap,
+  onPosted,
 }: {
   frameKey: FrameKey;
   shots: string[];
   onRetake: () => void;
   onChangeFrame: () => void;
   onBackToMap: () => void;
+  onPosted: (id: string) => void;
 }) {
   const [stripUrl, setStripUrl] = useState<string | null>(null);
   const [stripSize, setStripSize] = useState<{ w: number; h: number } | null>(null);
@@ -482,6 +486,10 @@ export function ResultScreen({
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bragging, setBragging] = useState(false); // 자랑하기 모달 열림
+  const [postTitle, setPostTitle] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postErr, setPostErr] = useState<string | null>(null);
   const editorRef = useRef<EditorHandle>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const f = FRAMES[frameKey];
@@ -566,6 +574,31 @@ export function ResultScreen({
     setShareMsg("이 기기에서는 공유를 지원하지 않습니다. 저장을 이용해주세요.");
   };
 
+  // 광장 게시판에 올리기 — 편집 결과를 축소해 서버(게시판)로 업로드.
+  const submitBrag = async () => {
+    const title = postTitle.trim();
+    if (!title) {
+      setPostErr("제목을 한 줄 입력해주세요.");
+      return;
+    }
+    const url = exportImage();
+    if (!url) return;
+    setPosting(true);
+    setPostErr(null);
+    try {
+      const small = await downscaleDataUrl(url);
+      const res = await createPostFn({ data: { title, image: small, frame: frameKey } });
+      setBragging(false);
+      setPostTitle("");
+      onPosted(res.id);
+    } catch (e) {
+      console.error(e);
+      setPostErr("게시 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setPosting(false);
+    }
+  };
+
   return (
     <FestivalSelectBg onBack={onChangeFrame}>
       <div className="space-y-3 px-4 pt-1">
@@ -626,6 +659,25 @@ export function ResultScreen({
           ))}
         </div>
 
+        {/* 주민들에게 자랑하기 — select_note(크림 노트) 위 글자 오버레이 → 광장 게시판 업로드 */}
+        <button
+          onClick={() => {
+            setPostErr(null);
+            setBragging(true);
+          }}
+          disabled={!stripUrl}
+          aria-label="주민들에게 자랑하기"
+          className="relative block w-full select-none transition active:scale-95 disabled:opacity-40"
+        >
+          <img src={noteSrc} alt="" draggable={false} className="w-full select-none" />
+          <span
+            className="absolute inset-0 flex items-center justify-center px-[14%] text-center font-display font-extrabold text-[#9c5a3c]"
+            style={{ fontSize: "clamp(14px, 4.3vw, 18px)" }}
+          >
+            📢 주민들에게 자랑하기
+          </span>
+        </button>
+
         {/* 축제로 돌아가기 — back_button(풀폭 크림 버튼) 위 중앙 오버레이 */}
         <div className="relative w-full select-none">
           <img src={backBar} alt="" draggable={false} className="w-full select-none" />
@@ -643,10 +695,59 @@ export function ResultScreen({
         <div className="relative mx-auto mb-7 mt-1 w-[92%] max-w-[360px]">
           <img src={noteSrc} alt="" draggable={false} className="w-full select-none" />
           <span className="absolute inset-0 flex items-center justify-center px-[13%] text-center text-[12px] font-medium leading-tight text-amber-900/80">
-            촬영 및 업로드된 사진은 서버에 저장되지 않으며 사용자 기기에서만 사용됩니다.
+            저장·공유는 기기에서만 처리돼요. “주민들에게 자랑하기”로 올린 사진만 광장 게시판에
+            공개됩니다.
           </span>
         </div>
       </div>
+
+      {/* 자랑하기 모달 — 한 줄 제목 입력 후 게시판 업로드 */}
+      {bragging && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6"
+          onClick={() => !posting && setBragging(false)}
+        >
+          <div
+            className="festival-card w-full max-w-[340px] p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-center font-display text-lg font-extrabold text-primary">
+              광장 게시판에 올리기
+            </h3>
+            <p className="mt-1 text-center text-xs text-muted-foreground">
+              한 줄 제목과 함께 내 네컷을 주민들에게 공개해요.
+            </p>
+            <input
+              value={postTitle}
+              onChange={(e) => setPostTitle(e.target.value)}
+              maxLength={40}
+              placeholder="예) 빙그레 왕국 다녀왔어요!"
+              className="mt-3 w-full rounded-xl border-2 border-border bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+              autoFocus
+            />
+            <div className="mt-1 text-right text-[10px] text-muted-foreground">
+              {postTitle.length}/40
+            </div>
+            {postErr && <p className="mt-1 text-center text-xs text-destructive">{postErr}</p>}
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => setBragging(false)}
+                disabled={posting}
+                className="flex-1 rounded-full bg-secondary px-4 py-2.5 text-sm font-bold text-secondary-foreground transition active:scale-95 disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={submitBrag}
+                disabled={posting}
+                className="flex-1 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition active:scale-95 disabled:opacity-50"
+              >
+                {posting ? "올리는 중…" : "올리기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </FestivalSelectBg>
   );
 }
