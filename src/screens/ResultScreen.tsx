@@ -70,6 +70,73 @@ type EditorHandle = { exportPng: () => string };
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
+// 브러시 사용 중 페이지 스크롤용 우측 레일 — 캔버스가 터치를 잡아 스크롤이 막히는
+// 모바일 문제 해결. 레일 위 터치 Y 위치에 비례해 페이지를 스크롤한다(스크롤바 썸).
+function BrushScrollRail() {
+  const [frac, setFrac] = useState(0);
+  const railRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef(false);
+
+  useEffect(() => {
+    const update = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setFrac(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  const scrollFromY = (clientY: number) => {
+    const r = railRef.current!.getBoundingClientRect();
+    const f = Math.max(0, Math.min(1, (clientY - r.top) / r.height));
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    window.scrollTo({ top: f * max });
+  };
+  const down = (e: ReactPointerEvent) => {
+    dragRef.current = true;
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* 일부 환경에서 비활성 포인터면 throw — 무시 */
+    }
+    scrollFromY(e.clientY);
+  };
+  const move = (e: ReactPointerEvent) => {
+    if (dragRef.current) scrollFromY(e.clientY);
+  };
+  const up = () => {
+    dragRef.current = false;
+  };
+
+  return (
+    <div
+      ref={railRef}
+      onPointerDown={down}
+      onPointerMove={move}
+      onPointerUp={up}
+      onPointerCancel={up}
+      aria-label="페이지 스크롤"
+      className="fixed right-1 top-[12dvh] z-40 flex h-[76dvh] w-8 items-center justify-center rounded-full bg-white/60 shadow ring-1 ring-primary/30 backdrop-blur-sm"
+      style={{ touchAction: "none" }}
+    >
+      <div className="pointer-events-none relative h-full w-1.5 rounded-full bg-primary/25">
+        <div
+          className="absolute left-1/2 h-12 w-4 -translate-x-1/2 rounded-full bg-primary shadow-md ring-2 ring-white"
+          style={{ top: `calc(${frac} * (100% - 3rem))` }}
+        />
+      </div>
+      <span className="pointer-events-none absolute -top-4 text-[11px] font-bold text-primary">
+        ↕
+      </span>
+    </div>
+  );
+}
+
 const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; height: number }>(
   function PhotoEditor({ src, width, height }, ref) {
     const stageRef = useRef<HTMLDivElement>(null);
@@ -81,6 +148,9 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
     const nextOrder = () => ++orderRef.current;
 
     const [tool, setTool] = useState<EditorTool>("none");
+    const [isCoarse] = useState(
+      () => typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches,
+    );
     const [stickers, setStickers] = useState<StickerItem[]>([]);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -460,6 +530,9 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
             </div>
           </div>
         )}
+
+        {/* 브러시 중 페이지 스크롤용 우측 레일 (터치 기기에서만) */}
+        {tool === "brush" && isCoarse && <BrushScrollRail />}
       </div>
     );
   },
