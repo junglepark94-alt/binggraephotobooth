@@ -9,6 +9,8 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import favicon32 from "@/assets/favicon-32.png";
+import favicon180 from "@/assets/favicon-180.png";
 
 function NotFoundComponent() {
   return (
@@ -90,6 +92,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "빙그레 왕국 여름 축제에서 즐기는 인생네컷" },
     ],
     links: [
+      { rel: "icon", type: "image/png", href: favicon32 },
+      { rel: "apple-touch-icon", href: favicon180 },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
