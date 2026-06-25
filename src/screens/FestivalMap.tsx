@@ -148,14 +148,6 @@ export function FestivalMap({
           draggable={false}
         />
 
-        {/* 광장 게시판 (주민들의 자랑 피드 둘러보기) */}
-        <button
-          onClick={onBoard}
-          className="absolute left-3 top-3 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-primary shadow active:scale-95"
-        >
-          📋 광장 게시판
-        </button>
-
         {/* 축제 마치기 (메뉴바는 진행표시 전용이라 별도 버튼) */}
         <button
           onClick={onEnd}
@@ -165,6 +157,16 @@ export function FestivalMap({
         </button>
 
         {/* 클릭 영역 (배경 위 투명 핫스팟) — 새 배경(festival_bg)에 맞춤 */}
+        {/* 좌상단 바나나맛우유·메로나 조형물 → 광장 게시판 (느낌표 상시 표시) */}
+        <Hotspot
+          left="18%"
+          top="28%"
+          width="38%"
+          height="21%"
+          label="광장 게시판"
+          onClick={onBoard}
+          pulse
+        />
         <Hotspot
           left="57%"
           top="52%"
