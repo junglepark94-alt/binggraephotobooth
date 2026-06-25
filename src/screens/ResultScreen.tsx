@@ -75,7 +75,8 @@ const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 function BrushScrollRail() {
   const [frac, setFrac] = useState(0);
   const railRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef(false);
+  // 드래그 시작 시점의 기준값 — 절대 위치가 아니라 손가락 이동량(델타)으로 스크롤한다.
+  const dragRef = useRef<{ startY: number; startScroll: number; gain: number } | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -91,26 +92,31 @@ function BrushScrollRail() {
     };
   }, []);
 
-  const scrollFromY = (clientY: number) => {
-    const r = railRef.current!.getBoundingClientRect();
-    const f = Math.max(0, Math.min(1, (clientY - r.top) / r.height));
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    window.scrollTo({ top: f * max });
-  };
   const down = (e: ReactPointerEvent) => {
-    dragRef.current = true;
+    const railH = railRef.current?.getBoundingClientRect().height ?? 1;
+    const travel = Math.max(1, railH - 48); // 썸(h-12=48px)을 제외한 이동 범위
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    // 시작 기준 저장 — 누르는 순간엔 스크롤이 튀지 않고, 이후 손가락 이동량만큼만 스크롤.
+    dragRef.current = {
+      startY: e.clientY,
+      startScroll: window.scrollY,
+      gain: max > 0 ? max / travel : 0,
+    };
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
       /* 일부 환경에서 비활성 포인터면 throw — 무시 */
     }
-    scrollFromY(e.clientY);
   };
   const move = (e: ReactPointerEvent) => {
-    if (dragRef.current) scrollFromY(e.clientY);
+    const d = dragRef.current;
+    if (!d) return;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const target = Math.max(0, Math.min(max, d.startScroll + (e.clientY - d.startY) * d.gain));
+    window.scrollTo(0, target);
   };
   const up = () => {
-    dragRef.current = false;
+    dragRef.current = null;
   };
 
   return (
