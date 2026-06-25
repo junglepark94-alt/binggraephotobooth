@@ -27,7 +27,8 @@ export async function loadImage(src: string): Promise<HTMLImageElement> {
 
 // 광장 게시판 업로드용 — data URL을 지정 폭으로 축소한 JPEG data URL로 변환.
 // (원본 스트립은 수천 px라 그대로 올리면 무거움 → 게시판 표시에 충분한 크기로 줄인다)
-export async function downscaleDataUrl(src: string, maxW = 460, quality = 0.8): Promise<string> {
+// 2열 모바일 표시 폭(~180px)을 고려해 360px/q0.72로 — 전송량을 약 절반으로 낮춘다.
+export async function downscaleDataUrl(src: string, maxW = 360, quality = 0.72): Promise<string> {
   const img = await loadImage(src);
   const scale = Math.min(1, maxW / img.naturalWidth);
   const w = Math.max(1, Math.round(img.naturalWidth * scale));
