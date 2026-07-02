@@ -1,19 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { FestivalSelectBg } from "@/components/common";
 import { type PlazaPost, type SortKey, likePostFn, listPostsFn } from "@/lib/plaza";
+import { timeAgo } from "@/lib/time";
 
 const PAGE = 60; // 한 번에 불러오는 게시물 수
-
-// 상대 시간 표기 (방금/N분 전/N시간 전/N일 전).
-function timeAgo(ts: number): string {
-  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (s < 60) return "방금 전";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  return `${Math.floor(h / 24)}일 전`;
-}
 
 // "한 명이 한 번"은 디바이스 localStorage로 관리(서버는 누적 수만 증감).
 const LIKED_KEY = "plaza:liked";
@@ -75,14 +65,17 @@ export function PlazaBoard({
     setError(null);
     try {
       const res = await listPostsFn({ data: { offset, limit: PAGE, sort: sortNow } });
-      setTotal(res.total);
-      if (reset) {
-        setPosts(res.posts);
-      } else {
-        setPosts((prev) => {
-          const seen = new Set(prev.map((p) => p.id));
-          return [...prev, ...res.posts.filter((p) => !seen.has(p.id))];
-        });
+      // 로딩 중 정렬이 바뀌었으면 낡은 응답은 버린다 (아래에서 새 정렬로 다시 로드).
+      if (stateRef.current.sort === sortNow) {
+        setTotal(res.total);
+        if (reset) {
+          setPosts(res.posts);
+        } else {
+          setPosts((prev) => {
+            const seen = new Set(prev.map((p) => p.id));
+            return [...prev, ...res.posts.filter((p) => !seen.has(p.id))];
+          });
+        }
       }
     } catch {
       setError("게시물을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
@@ -91,6 +84,8 @@ export function PlazaBoard({
       setLoading(false);
       setLoadingMore(false);
     }
+    // 진행 중이던 요청 때문에 드랍됐던 정렬 변경을 이어서 처리.
+    if (stateRef.current.sort !== sortNow) loadPage(true);
   };
 
   // 디바이스의 좋아요 표시 로드(1회)

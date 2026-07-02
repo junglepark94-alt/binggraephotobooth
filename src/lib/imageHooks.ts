@@ -29,6 +29,7 @@ function whiteKeyToDataURL(img: HTMLImageElement, threshold = 244): string {
 // 같은 결과를 화면 전환마다 다시 만들지 않도록 모듈 레벨 캐시에 dataURL을 보관한다.
 // (재방문 시 캐시 히트 → 초기값부터 처리본이라 깜빡임·재처리 없음)
 const whiteKeyCache = new Map<string, string>();
+const whiteKeyTrimCache = new Map<string, string>();
 const keyedCropCache = new Map<string, string>();
 const nukkiCache = new Map<string, string>();
 
@@ -47,6 +48,83 @@ export function useWhiteKeyed(src: string): string {
       if (cancelled) return;
       const result = whiteKeyToDataURL(img);
       whiteKeyCache.set(src, result);
+      setOut(result);
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+  return out;
+}
+
+// 흰 배경 제거 + 불투명 픽셀 bounding box로 투명 여백 트림.
+// (하단 메뉴바처럼 에셋 위아래 여백을 없애고 내용에 딱 맞춰야 할 때 사용)
+export function useWhiteKeyedTrimmed(src: string): string {
+  const [out, setOut] = useState(() => whiteKeyTrimCache.get(src) ?? src);
+  useEffect(() => {
+    const cached = whiteKeyTrimCache.get(src);
+    if (cached) {
+      setOut(cached);
+      return;
+    }
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      const W = img.naturalWidth;
+      const H = img.naturalHeight;
+      const c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0);
+      const id = ctx.getImageData(0, 0, W, H);
+      const d = id.data;
+      const isWhite = (x: number, y: number) => {
+        const i = (y * W + x) * 4;
+        return d[i + 3] > 200 && d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244;
+      };
+      if (isWhite(1, 1) && isWhite(W - 2, 1) && isWhite(1, H - 2) && isWhite(W - 2, H - 2)) {
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244) d[i + 3] = 0;
+        }
+        ctx.putImageData(id, 0, 0);
+      }
+      // 불투명 픽셀 bounding box로 여백 트림
+      let minX = W,
+        minY = H,
+        maxX = -1,
+        maxY = -1;
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          if (d[(y * W + x) * 4 + 3] > 20) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      let result: string;
+      if (maxX < minX || maxY < minY) {
+        result = c.toDataURL();
+      } else {
+        const cw = maxX - minX + 1;
+        const ch = maxY - minY + 1;
+        const t = document.createElement("canvas");
+        t.width = cw;
+        t.height = ch;
+        const tctx = t.getContext("2d");
+        if (tctx) {
+          tctx.drawImage(c, minX, minY, cw, ch, 0, 0, cw, ch);
+          result = t.toDataURL();
+        } else {
+          result = c.toDataURL();
+        }
+      }
+      whiteKeyTrimCache.set(src, result);
       setOut(result);
     };
     img.src = src;

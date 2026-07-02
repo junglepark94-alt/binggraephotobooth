@@ -29,10 +29,18 @@ export function ShootScreen({
   const [countdown, setCountdown] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
+  const unmountedRef = useRef(false); // 촬영 루프가 언마운트 후 onDone을 부르지 않게
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotOverlays, setSlotOverlays] = useState<string[]>([]);
   const f = FRAMES[frameKey];
   const photoIconSrc = useWhiteKeyed(navIconPhoto); // 카메라 아이콘(에셋)
+
+  useEffect(
+    () => () => {
+      unmountedRef.current = true;
+    },
+    [],
+  );
 
   // 프레임/슬롯 준비 — 권한 불필요, 마운트 시 미리 계산.
   // 슬롯별 오버레이(컷마다 겹쳐 들어온 캐릭터/장식)도 프레임에서 잘라 미리 만든다.
@@ -121,10 +129,18 @@ export function ShootScreen({
     for (let i = 0; i < 4; i++) {
       setShots([...collected]);
       await runCountdown();
+      // 촬영 도중 뒤로가기 등으로 화면을 떠났으면 중단 — 결과 화면으로 끌고 가지 않는다.
+      if (unmountedRef.current) return;
       const shot = capture();
+      if (!shot) {
+        setBusy(false);
+        setError("카메라 화면을 읽지 못했어요. 다시 시도해주세요.");
+        return;
+      }
       collected.push(shot);
       setShots([...collected]);
       await new Promise((r) => setTimeout(r, 500));
+      if (unmountedRef.current) return;
     }
     setBusy(false);
     onDone(collected);

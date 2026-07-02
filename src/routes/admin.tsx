@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { type PlazaPost, adminListFn, adminLoginFn, clearPostsFn, deletePostFn } from "@/lib/plaza";
+import { timeAgo } from "@/lib/time";
 
 const PAGE = 60;
 
@@ -10,16 +11,6 @@ export const Route = createFileRoute("/admin")({
     meta: [{ title: "광장 게시판 관리자 — 빙그레 네컷" }],
   }),
 });
-
-function timeAgo(ts: number): string {
-  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-  if (s < 60) return "방금 전";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  return `${Math.floor(h / 24)}일 전`;
-}
 
 function AdminPage() {
   const [pw, setPw] = useState("");

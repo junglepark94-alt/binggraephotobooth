@@ -649,6 +649,8 @@ export function ResultScreen({
         return;
       }
     } catch (e) {
+      // 사용자가 공유 시트를 닫은 것 — 미지원 안내를 띄우지 않는다.
+      if ((e as Error)?.name === "AbortError") return;
       console.error(e);
     }
     setShareMsg("이 기기에서는 공유를 지원하지 않습니다. 저장을 이용해주세요.");

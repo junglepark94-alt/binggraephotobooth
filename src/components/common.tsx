@@ -1,9 +1,44 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 import btnImg from "@/assets/button_trim.png";
+import logo from "@/assets/logo_trim.png";
 import selectButton from "@/assets/select_button.png";
 import selectBg from "@/assets/select_bg.png";
 import windowImg from "@/assets/window_trim.png";
 import { useWhiteKeyed } from "@/lib/imageHooks";
+
+// 상단 타이틀 로고 + 리본 곡선 부제 — 메인/엔드 화면 공용.
+// 부제를 리본 아치 곡선(트림 이미지 929x538 픽셀 측정)에 태운다.
+export function KingdomLogo() {
+  const pathId = useId();
+  return (
+    <div className="absolute inset-x-0 top-[3%] flex justify-center">
+      <div className="relative w-[95%] max-w-none">
+        <img src={logo} alt="빙그레 왕국" className="w-full drop-shadow-sm" />
+        <svg
+          viewBox="0 0 1536 1024"
+          preserveAspectRatio="xMidYMid meet"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          aria-hidden="true"
+        >
+          <defs>
+            <path id={pathId} d="M 250 762 Q 768 712 1286 762" fill="none" />
+          </defs>
+          <text
+            textAnchor="middle"
+            fill="#b14a72"
+            fontWeight={700}
+            fontFamily="Gaegu, 'Apple SD Gothic Neo', sans-serif"
+            fontSize={50}
+          >
+            <textPath href={`#${pathId}`} startOffset="50%">
+              오늘도 맛있는 즐거움이 가득한 곳
+            </textPath>
+          </text>
+        </svg>
+      </div>
+    </div>
+  );
+}
 
 // 공통 이미지 버튼 (button_trim.png — 핑크 알약 + 우측 아이스크림). 글자는 오버레이.
 export function ImageButton({

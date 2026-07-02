@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import festivalBg from "@/assets/festival_bg.png";
 import navBarEmpty from "@/assets/nav_bar_empty.png";
 import navIconPhoto from "@/assets/nav_icon_photo.png";
@@ -7,7 +7,7 @@ import navIconCandy from "@/assets/nav_icon_candy.png";
 import navIconHeart from "@/assets/nav_icon_heart.png";
 import { Hotspot } from "@/components/common";
 import type { Inventory } from "@/lib/game";
-import { useWhiteKeyed } from "@/lib/imageHooks";
+import { useWhiteKeyed, useWhiteKeyedTrimmed } from "@/lib/imageHooks";
 
 // 클로버=나뭇잎이라 아이콘은 총 4개. 빈 바(nav_bar_empty) 위 균등 4칸(dstCx)에 등장시킨다.
 const NAV_ICONS: {
@@ -46,64 +46,7 @@ export function FestivalMap({
   const say = (who: string, text: string) => setBubble({ who, text });
 
   // 빈 바: 흰 배경 제거 + 위아래 투명 여백 트림(핑크 알약이 하단 라벨 바로 위에 붙도록).
-  const [navBarSrc, setNavBarSrc] = useState<string>(navBarEmpty);
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => {
-      const W = img.naturalWidth;
-      const H = img.naturalHeight;
-      const c = document.createElement("canvas");
-      c.width = W;
-      c.height = H;
-      const ctx = c.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0);
-      const id = ctx.getImageData(0, 0, W, H);
-      const d = id.data;
-      const isWhite = (x: number, y: number) => {
-        const i = (y * W + x) * 4;
-        return d[i + 3] > 200 && d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244;
-      };
-      if (isWhite(1, 1) && isWhite(W - 2, 1) && isWhite(1, H - 2) && isWhite(W - 2, H - 2)) {
-        for (let i = 0; i < d.length; i += 4) {
-          if (d[i] > 244 && d[i + 1] > 244 && d[i + 2] > 244) d[i + 3] = 0;
-        }
-        ctx.putImageData(id, 0, 0);
-      }
-      // 불투명 픽셀 bounding box로 여백 트림
-      let minX = W,
-        minY = H,
-        maxX = -1,
-        maxY = -1;
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          if (d[(y * W + x) * 4 + 3] > 20) {
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-          }
-        }
-      }
-      if (maxX < minX || maxY < minY) {
-        setNavBarSrc(c.toDataURL());
-        return;
-      }
-      const cw = maxX - minX + 1;
-      const ch = maxY - minY + 1;
-      const t = document.createElement("canvas");
-      t.width = cw;
-      t.height = ch;
-      const tctx = t.getContext("2d");
-      if (!tctx) {
-        setNavBarSrc(c.toDataURL());
-        return;
-      }
-      tctx.drawImage(c, minX, minY, cw, ch, 0, 0, cw, ch);
-      setNavBarSrc(t.toDataURL());
-    };
-    img.src = navBarEmpty;
-  }, []);
+  const navBarSrc = useWhiteKeyedTrimmed(navBarEmpty);
   // 아이콘 4종 — 흰 배경으로 온 에셋은 자동으로 흰색을 투명 처리한다.
   const navIconSrc: Record<keyof Inventory, string> = {
     photo: useWhiteKeyed(navIconPhoto),

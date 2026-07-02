@@ -7,7 +7,7 @@
 //
 // dev(`bun run dev`)·prod(`bun run serve.ts`) 모두 Bun 런타임이라 Bun.redis를 그대로 쓴다.
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestIP } from "@tanstack/react-start/server";
+import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 
 export type PlazaPost = {
   id: string;
@@ -21,6 +21,7 @@ export type PlazaPost = {
 
 const KEY = "plaza:posts";
 const KEY_LIKES = "plaza:likes"; // 좋아요 카운트 해시(field=게시물 id)
+const KEY_IDS = "plaza:ids"; // 현존 게시물 id 세트 — 좋아요 대상 검증용
 const MAX_POSTS = 200; // 서버에 보관하는 최신 게시물 수(롤링). 화면엔 페이지네이션으로 노출
 const PAGE_LIMIT = 60; // 한 번에 불러오는 최대 수(무한 스크롤 페이지 크기)
 
@@ -34,6 +35,7 @@ type Store = {
   add: (p: PlazaPost) => Promise<void>;
   list: (offset: number, limit: number, sort: SortKey) => Promise<PlazaPost[]>;
   count: () => Promise<number>;
+  has: (id: string) => Promise<boolean>; // 좋아요 대상이 실제 게시물인지 검증
   remove: (id: string) => Promise<void>;
   clear: () => Promise<void>;
   like: (id: string, delta: number) => Promise<number>; // 새 누적 수 반환
@@ -58,7 +60,11 @@ function memoryStore(): Store {
   return {
     async add(p) {
       arr.unshift(p);
-      if (arr.length > MAX_POSTS) arr.length = MAX_POSTS;
+      // 롤링 삭제되는 게시물의 좋아요 기록도 함께 지운다 (좋아요 맵 무한 증가 방지).
+      while (arr.length > MAX_POSTS) {
+        const dropped = arr.pop();
+        if (dropped) delete likes[dropped.id];
+      }
     },
     async list(offset, limit, sort) {
       const merged = arr.map((p) => ({ ...p, likes: likes[p.id] ?? 0 }));
@@ -66,6 +72,9 @@ function memoryStore(): Store {
     },
     async count() {
       return arr.length;
+    },
+    async has(id) {
+      return arr.some((p) => p.id === id);
     },
     async remove(id) {
       const i = arr.findIndex((p) => p.id === id);
@@ -88,7 +97,19 @@ function redisStore(redis: { send: (cmd: string, args: string[]) => Promise<unkn
   return {
     async add(p) {
       await redis.send("LPUSH", [KEY, JSON.stringify(p)]);
+      // 트림으로 밀려나는 꼬리 게시물의 좋아요/id 흔적을 먼저 지운다 (해시·세트 무한 증가 방지).
+      const dropped = (await redis.send("LRANGE", [KEY, String(MAX_POSTS), "-1"])) as string[];
+      for (const r of dropped ?? []) {
+        try {
+          const id = (JSON.parse(r) as PlazaPost).id;
+          await redis.send("HDEL", [KEY_LIKES, id]);
+          await redis.send("SREM", [KEY_IDS, id]);
+        } catch {
+          /* 손상된 항목은 건너뜀 */
+        }
+      }
       await redis.send("LTRIM", [KEY, "0", String(MAX_POSTS - 1)]);
+      await redis.send("SADD", [KEY_IDS, p.id]);
     },
     async list(offset, limit, sort) {
       const likeMap = await readLikes(redis);
@@ -120,6 +141,26 @@ function redisStore(redis: { send: (cmd: string, args: string[]) => Promise<unkn
     async count() {
       return Number(await redis.send("LLEN", [KEY])) || 0;
     },
+    async has(id) {
+      if (Number(await redis.send("SISMEMBER", [KEY_IDS, id]))) return true;
+      // id 세트 도입 전에 쌓인 기존 데이터 호환 — 세트가 비어 있으면 목록에서 1회 재구축.
+      const total = Number(await redis.send("LLEN", [KEY])) || 0;
+      const size = Number(await redis.send("SCARD", [KEY_IDS])) || 0;
+      if (total > 0 && size === 0) {
+        const rows = (await redis.send("LRANGE", [KEY, "0", "-1"])) as string[];
+        const ids: string[] = [];
+        for (const r of rows ?? []) {
+          try {
+            ids.push((JSON.parse(r) as PlazaPost).id);
+          } catch {
+            /* 손상된 항목은 건너뜀 */
+          }
+        }
+        if (ids.length) await redis.send("SADD", [KEY_IDS, ...ids]);
+        return ids.includes(id);
+      }
+      return false;
+    },
     async remove(id) {
       // LIST엔 id 인덱스가 없으니 일치 항목의 원본 문자열을 찾아 LREM으로 원자 삭제(순서 유지).
       const rows = (await redis.send("LRANGE", [KEY, "0", "-1"])) as string[];
@@ -133,10 +174,12 @@ function redisStore(redis: { send: (cmd: string, args: string[]) => Promise<unkn
         }
       }
       await redis.send("HDEL", [KEY_LIKES, id]);
+      await redis.send("SREM", [KEY_IDS, id]);
     },
     async clear() {
       await redis.send("DEL", [KEY]);
       await redis.send("DEL", [KEY_LIKES]);
+      await redis.send("DEL", [KEY_IDS]);
     },
     async like(id, delta) {
       const n = Number(await redis.send("HINCRBY", [KEY_LIKES, id, String(delta)]));
@@ -163,45 +206,94 @@ async function readLikes(redis: {
   return map;
 }
 
-// 저장소 선택을 한 번만 수행하고 캐시한다. Bun.redis는 첫 명령 때 지연 연결되므로,
-// 여기서 PING으로 실제 연결을 확인한 뒤 실패하면 인메모리로 폴백한다(연결이 안 될 때
-// 게시판 전체가 throw되는 걸 방지). 동기 호출부는 모두 `await getStore()`로 받는다.
-let storePromise: Promise<Store> | null = null;
-function getStore(): Promise<Store> {
-  if (!storePromise) storePromise = selectStore();
-  return storePromise;
-}
-async function selectStore(): Promise<Store> {
+// 저장소 선택. Bun.redis는 첫 명령 때 지연 연결되므로 PING으로 실제 연결을 확인한다.
+// 연결 성공 시에만 캐시하고, 실패하면 인메모리로 "이번 요청만" 폴백한 뒤 쿨다운 후
+// 재시도한다 — 부팅 시점의 일시 장애로 프로세스 수명 내내 인메모리에 갇히지 않도록.
+let cachedStore: Store | null = null;
+let redisRetryAt = 0; // 이 시각 전까지는 PING 재시도 없이 인메모리 사용
+const REDIS_RETRY_MS = 30_000;
+async function getStore(): Promise<Store> {
+  if (cachedStore) return cachedStore;
   const bun = (globalThis as unknown as { Bun?: { redis?: unknown } }).Bun;
   if (bun?.redis && process.env.REDIS_URL) {
+    if (Date.now() < redisRetryAt) return memoryStore();
     const redis = bun.redis as { send: (cmd: string, args: string[]) => Promise<unknown> };
     try {
       await redis.send("PING", []);
-      return redisStore(redis);
+      cachedStore = redisStore(redis);
+      return cachedStore;
     } catch (e) {
-      console.warn("[plaza] Redis 연결 실패 — 인메모리로 폴백합니다.", e);
+      redisRetryAt = Date.now() + REDIS_RETRY_MS;
+      console.warn("[plaza] Redis 연결 실패 — 인메모리로 임시 폴백, 30초 후 재시도합니다.", e);
+      return memoryStore();
     }
   }
-  return memoryStore();
+  cachedStore = memoryStore();
+  return cachedStore;
 }
 
-// 간단한 인메모리 슬라이딩 윈도우 레이트리밋(IP별) — 자동 스팸 방지용 백스톱.
-function rateLimit(bucket: string, max: number, windowMs: number): boolean {
+// ─────────────── 레이트리밋 (IP별 인메모리 슬라이딩 윈도우) ───────────────
+const RL_SWEEP_SIZE = 500; // 이 크기를 넘으면 오래된 IP 엔트리를 청소
+const RL_MAX_WINDOW_MS = 10 * 60_000; // 청소 기준: 가장 긴 윈도우보다 오래된 기록은 폐기
+
+function rlMap(): Map<string, number[]> {
   const g = globalThis as unknown as { __plazaRL?: Map<string, number[]> };
   g.__plazaRL ??= new Map();
-  let ip = "unknown";
-  try {
-    ip = getRequestIP({ xForwardedFor: true }) ?? "unknown";
-  } catch {
-    /* 요청 컨텍스트 밖이면 unknown */
+  const map = g.__plazaRL;
+  if (map.size > RL_SWEEP_SIZE) {
+    const now = Date.now();
+    for (const [k, hits] of map) {
+      if (!hits.some((t) => now - t < RL_MAX_WINDOW_MS)) map.delete(k);
+    }
   }
-  const key = `${bucket}:${ip}`;
+  return map;
+}
+
+// 요청 IP — X-Forwarded-For는 클라이언트가 앞쪽에 위조 값을 끼워 넣을 수 있으므로,
+// 신뢰 프록시(Railway 에지)가 마지막에 덧붙인 "가장 오른쪽" 항목을 쓴다.
+function clientIp(): string {
+  try {
+    const xff = getRequestHeader("x-forwarded-for");
+    if (xff) {
+      const last = xff.split(",").at(-1)?.trim();
+      if (last) return last;
+    }
+    return getRequestIP() ?? "unknown";
+  } catch {
+    return "unknown"; // 요청 컨텍스트 밖
+  }
+}
+
+// 자동 스팸 방지용 백스톱 — 윈도우 내 호출이 max 미만이면 기록 후 true.
+function rateLimit(bucket: string, max: number, windowMs: number): boolean {
+  const map = rlMap();
+  const key = `${bucket}:${clientIp()}`;
   const now = Date.now();
-  const hits = (g.__plazaRL.get(key) ?? []).filter((t) => now - t < windowMs);
-  if (hits.length >= max) return false;
+  const hits = (map.get(key) ?? []).filter((t) => now - t < windowMs);
+  if (hits.length >= max) {
+    map.set(key, hits);
+    return false;
+  }
   hits.push(now);
-  g.__plazaRL.set(key, hits);
+  map.set(key, hits);
   return true;
+}
+
+// 기록 없이 확인만 (실패 횟수 기반 제한에서 사용).
+function ratePeek(bucket: string, max: number, windowMs: number): boolean {
+  const map = rlMap();
+  const key = `${bucket}:${clientIp()}`;
+  const now = Date.now();
+  return (map.get(key) ?? []).filter((t) => now - t < windowMs).length < max;
+}
+
+// 확인 없이 기록만 (실패한 시도를 적립).
+function rateHit(bucket: string): void {
+  const map = rlMap();
+  const key = `${bucket}:${clientIp()}`;
+  const hits = map.get(key) ?? [];
+  hits.push(Date.now());
+  map.set(key, hits);
 }
 
 // 게시물 페이지 — 무한 스크롤(offset/limit) + 정렬(sort). total도 함께 돌려준다.
@@ -226,7 +318,9 @@ export const createPostFn = createServerFn({ method: "POST" })
     const title = (d?.title ?? "").trim().slice(0, MAX_TITLE);
     const image = d?.image ?? "";
     if (!title) throw new Error("제목을 입력해주세요.");
-    if (!image.startsWith("data:image/")) throw new Error("이미지 형식이 올바르지 않습니다.");
+    // 클라이언트는 항상 JPEG(downscaleDataUrl)을 보낸다 — 래스터 포맷만 허용(SVG 등 차단).
+    if (!/^data:image\/(jpeg|png|webp)[;,]/.test(image))
+      throw new Error("이미지 형식이 올바르지 않습니다.");
     if (image.length > MAX_IMAGE_CHARS) throw new Error("이미지 용량이 너무 큽니다.");
     return {
       title,
@@ -254,29 +348,51 @@ export const createPostFn = createServerFn({ method: "POST" })
 // 좋아요 토글 — like=true면 +1, false면 -1. 누구인지는 클라이언트(localStorage)가 관리하고
 // 서버는 누적 수만 증감한다. 새 누적 수를 돌려준다.
 export const likePostFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { id: string; like: boolean }) => ({ id: d?.id ?? "", like: !!d?.like }))
+  .inputValidator((d: { id: string; like: boolean }) => ({
+    id: String(d?.id ?? "").slice(0, 32),
+    like: !!d?.like,
+  }))
   .handler(async ({ data }) => {
     if (!data.id) throw new Error("게시물 id가 필요합니다.");
     if (!rateLimit("like", 60, 60_000)) throw new Error("잠시 후 다시 시도해주세요.");
-    const likes = await (await getStore()).like(data.id, data.like ? 1 : -1);
+    const store = await getStore();
+    // 존재하는 게시물만 증감 — 임의 id로 좋아요 저장소가 불어나는 것을 막는다.
+    if (!(await store.has(data.id))) throw new Error("게시물을 찾을 수 없습니다.");
+    const likes = await store.like(data.id, data.like ? 1 : -1);
     return { ok: true as const, likes };
   });
 
 // ─────────────── 어드민(/admin) — 게시물 삭제 관리 ───────────────
 // 비밀번호는 서버 핸들러 안에서만 비교되므로 클라이언트 번들에 노출되지 않는다.
-// 운영 시 ADMIN_PASSWORD 환경변수로 덮어쓸 수 있다(없으면 기본값 사용).
+// ADMIN_PASSWORD 환경변수가 필수 — 없으면 어드민 기능 전체가 비활성화된다.
+// (소스/git 히스토리에 남는 하드코딩 기본값은 두지 않는다. 로컬 개발은 .env에 설정.)
 let warnedNoAdminEnv = false;
+
+// 길이가 달라도 조기 종료 없이 전부 비교 — 타이밍 차이로 비밀번호를 추측하지 못하게.
+function safeEqual(a: string, b: string): boolean {
+  const len = Math.max(a.length, b.length);
+  let diff = a.length === b.length ? 0 : 1;
+  for (let i = 0; i < len; i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
 function assertAdmin(password: string) {
   const envPw = process.env.ADMIN_PASSWORD;
-  if (!envPw && !warnedNoAdminEnv) {
-    warnedNoAdminEnv = true;
-    // 저장소가 공개일 수 있으므로 소스 하드코딩 기본값에 의존하지 말 것.
-    console.warn(
-      "[plaza] ADMIN_PASSWORD 환경변수가 설정되지 않았습니다. /admin이 소스의 기본 비밀번호로 보호됩니다. 운영에서는 반드시 ADMIN_PASSWORD를 설정하세요.",
-    );
+  if (!envPw) {
+    if (!warnedNoAdminEnv) {
+      warnedNoAdminEnv = true;
+      console.warn(
+        "[plaza] ADMIN_PASSWORD 환경변수가 설정되지 않아 /admin 기능이 비활성화되었습니다.",
+      );
+    }
+    throw new Error("UNAUTHORIZED");
   }
-  const expected = envPw ?? "박종걸1!";
-  if ((password ?? "") !== expected) throw new Error("UNAUTHORIZED");
+  // 무차별 대입 방지 — 10분 내 실패 5회를 넘긴 IP는 비교 없이 거부.
+  if (!ratePeek("adminfail", 5, 10 * 60_000)) throw new Error("UNAUTHORIZED");
+  if (!safeEqual(password ?? "", envPw)) {
+    rateHit("adminfail");
+    throw new Error("UNAUTHORIZED");
+  }
 }
 
 // 비밀번호 확인(로그인) — 통과하면 첫 페이지 + total을 함께 돌려준다.

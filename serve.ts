@@ -25,7 +25,12 @@ const port = Number(process.env.PORT ?? 3000);
 
 // dist/client 밖으로 나가는 경로(.. 등)를 막는다.
 function safeClientPath(pathname: string): string | null {
-  const decoded = decodeURIComponent(pathname);
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return null; // 잘못된 퍼센트 인코딩("/%")은 정적 파일 아님 → SSR 폴백
+  }
   const full = normalize(join(clientDir, decoded));
   if (
     full !== clientDir &&

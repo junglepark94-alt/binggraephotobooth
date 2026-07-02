@@ -33,27 +33,37 @@ bunx tsc --noEmit  # 타입체크
 
 ## 아키텍처
 
-전부 **클라이언트 사이드**에서 처리된다. 사진은 서버로 전송·저장되지 않는다.
+촬영·합성은 전부 **클라이언트 사이드**에서 처리된다. 사진은 사용자가 "주민들에게 자랑하기"로
+광장 게시판에 올릴 때만 서버(게시판 저장소)로 전송된다.
 
-- `src/routes/index.tsx` — 앱 전체. 단일 페이지 상태머신으로 5단계 진행:
-  `prologue1 → prologue2 → select(프레임 선택) → shoot(촬영) → result(합성/저장/공유)`
-  - `ShootScreen`: `getUserMedia`로 셀카 미리보기(좌우 반전), 3초 카운트다운 ×4컷 캡처
-  - `ResultScreen`: 4컷을 프레임에 합성한 뒤 `PhotoEditor`로 꾸미기, PNG 저장 / Web Share API 공유
-  - `PhotoEditor`: 합성된 스트립 위에 스티커(이모지)·브러시 그리기. 스티커/획 좌표·크기는
-    이미지 대비 **비율(0~1)** 로 저장해 화면 표시와 원본 해상도 PNG 내보내기가 일치한다.
-    저장/공유는 `exportPng()`(imperative handle)로 편집 결과를 원본 해상도로 재합성
+- `src/routes/index.tsx` — 단일 페이지 상태머신(`Step`, `src/lib/game.ts`). 진행 단계:
+  `main → letter → map(축제 지도) → select(프레임 선택) → shoot(촬영) → result(합성/꾸미기/저장/공유)`
+  + 지도에서 분기: `draw`(아이스크림 뽑기) / `board`(광장 게시판) / `end`(축제 종료)
+- `src/screens/` — 단계별 화면 컴포넌트:
+  - `ShootScreen`: `getUserMedia`로 셀카 미리보기(좌우 반전), 카운트다운 ×4컷 캡처
+  - `ResultScreen`: 4컷을 프레임에 합성한 뒤 `PhotoEditor`(같은 파일)로 꾸미기, PNG 저장 /
+    Web Share API 공유 / 광장 게시판 업로드. 스티커/획 좌표·크기는 이미지 대비 **비율(0~1)** 로
+    저장해 화면 표시와 원본 해상도 PNG 내보내기가 일치한다. 저장/공유는 `exportPng()`
+    (imperative handle)로 편집 결과를 원본 해상도로 재합성
+  - `FestivalMap`: 축제 지도 + 핫스팟 미니게임(인벤토리), `PlazaBoard`: 게시판(무한 스크롤·좋아요),
+    `DrawScreen`: 스크래치 운세
 - `src/lib/photobooth.ts` — 핵심 이미지 로직:
   - `detectGreenSlots()` — 프레임 PNG의 **초록색 플레이스홀더** 영역을 flood-fill로 자동 감지해 사진이 들어갈 슬롯(최대 4개) 좌표를 계산
   - `fallbackSlots()` — 감지가 4개 미만이면 균등 분할 레이아웃으로 폴백
   - `composeStrip()` — 슬롯별로 사진(cover) → 오버레이 → 프레임(초록 영역 투명화) 순으로 캔버스 합성
-- `src/assets/` — 프레임 4종(white/brown/skyblue/binggraeus), 슬롯별 오버레이, 프롤로그 이미지
+- `src/lib/plaza.ts` — 광장 게시판 서버 함수(RPC). 저장소는 `REDIS_URL` 있으면 Bun 내장 Redis,
+  없으면 인메모리. `/admin`(`src/routes/admin.tsx`)은 **`ADMIN_PASSWORD` 환경변수 필수** —
+  미설정 시 어드민 기능이 비활성화된다 (소스에 기본 비밀번호를 두지 말 것).
+- `src/lib/imageHooks.ts` — 에셋 후처리 훅(흰 배경 키잉/크롭/누끼/트림, 모듈 레벨 캐시)
+- `src/assets/` — 프레임 4종(binggraeus/melonaprince/bravocone/bananamilk), 배경·버튼·아이콘 에셋
 - `src/routes/__root.tsx` — HTML 셸, 메타태그, 404/에러 컴포넌트, react-query Provider
 - `src/server.ts` / `src/start.ts` — SSR 에러를 브랜드 에러 페이지로 정규화하는 래퍼
 
 ### 프레임을 추가/수정하려면
 1. `src/assets/`에 프레임 PNG 추가 — 사진이 들어갈 자리는 **순수 초록색**으로 채운다 (감지 기준: `g>180, r<120, b<120, g>r+80, g>b+80`, `photobooth.ts`의 `isPlaceholderGreen`).
-2. 슬롯별 오버레이(스티커) PNG 추가.
-3. `src/routes/index.tsx`의 `FRAMES` 레코드와 `FrameKey`(`src/lib/photobooth.ts`)에 키 등록.
+2. (장식이 슬롯을 침범하는 프레임이면) 슬롯별 오버레이 PNG 추가 — 새 프레임들은 장식이
+   프레임 이미지에 포함돼 있어 투명 픽셀(`TRANSPARENT_PX`)로 충분하다.
+3. `src/data/frames.ts`의 `FRAMES` 레코드와 `FrameKey`(`src/lib/photobooth.ts`)에 키 등록.
 
 ## 주의사항
 
