@@ -42,7 +42,7 @@ bunx tsc --noEmit  # 타입체크
 - `src/screens/` — 단계별 화면 컴포넌트:
   - `ShootScreen`: `getUserMedia`로 셀카 미리보기(좌우 반전), 카운트다운 ×4컷 캡처
   - `ResultScreen`: 4컷을 프레임에 합성한 뒤 `PhotoEditor`(같은 파일)로 꾸미기, PNG 저장 /
-    Web Share API 공유 / 광장 게시판 업로드. 스티커/획 좌표·크기는 이미지 대비 **비율(0~1)** 로
+    Web Share API 공유 / 광장 게시판 업로드. 스티커 좌표·크기는 이미지 대비 **비율(0~1)** 로
     저장해 화면 표시와 원본 해상도 PNG 내보내기가 일치한다. 저장/공유는 `exportPng()`
     (imperative handle)로 편집 결과를 원본 해상도로 재합성
   - `FestivalMap`: 축제 지도 + 핫스팟 미니게임(인벤토리), `PlazaBoard`: 게시판(무한 스크롤·좋아요),

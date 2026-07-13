@@ -24,9 +24,9 @@ import {
 } from "@/lib/photobooth";
 
 // useKeyedCrop용 크롭 박스 + 셀 중심 좌표 (버튼 에셋 위 글자/아이콘 오버레이 위치).
-// 1x3 툴바 바(되돌리기/스티커/브러시).
-const TOOLBAR_CROP: Crop = { x0: 0.03, y0: 0.345, x1: 0.97, y1: 0.65 };
-const TOOLBAR_CELL_CX = [0.165, 0.5, 0.834];
+// 툴바 크림 박스 2칸(되돌리기/스티커) — 에셋의 3번째 박스는 크롭에서 제외.
+const TOOLBAR_CROP: Crop = { x0: 0.03, y0: 0.345, x1: 0.66, y1: 0.65 };
+const TOOLBAR_CELL_CX = [0.237, 0.743];
 // 2x2 액션 그리드(다시찍기/프레임변경/저장/공유).
 const RESULT_ACTIONS_CROP: Crop = { x0: 0.06, y0: 0.2, x1: 0.94, y1: 0.81 };
 const RESULT_ACTIONS_CELLS = [
@@ -39,24 +39,11 @@ const RESULT_ACTIONS_CELLS = [
 const BACK_BTN_CROP: Crop = { x0: 0.01, y0: 0.05, x1: 0.99, y1: 0.95 };
 
 // ───────────────────────── 사진 꾸미기 에디터 ─────────────────────────
-// 합성된 네컷 위에 스티커(이모지)·브러시 그리기. 좌표·크기는 모두 이미지 대비
+// 합성된 네컷 위에 스티커(이모지)를 얹는다. 좌표·크기는 모두 이미지 대비
 // 비율(0~1)로 저장 → 화면 표시와 PNG 내보내기가 정확히 일치.
 const STICKERS = ["❤️", "⭐", "🎀", "👑", "🌸", "🍦", "🫧", "🐰", "🍓", "✨", "🎈", "🧁"];
-const BRUSH_COLORS = [
-  "#ff5d8f",
-  "#ff8fab",
-  "#ffd166",
-  "#06d6a0",
-  "#7bdff2",
-  "#9b5de5",
-  "#ffffff",
-  "#3a3a3a",
-];
-const BRUSH_SIZES = [0.006, 0.013, 0.024]; // 선 굵기 (이미지 너비 대비 비율)
 const DEFAULT_STICKER_SIZE = 0.16;
 
-type Pt = { fx: number; fy: number };
-type Stroke = { color: string; widthFrac: number; points: Pt[]; order: number };
 type StickerItem = {
   id: string;
   char: string;
@@ -65,103 +52,22 @@ type StickerItem = {
   sizeFrac: number;
   order: number;
 };
-type EditorTool = "none" | "sticker" | "brush";
+type EditorTool = "none" | "sticker";
 type EditorHandle = { exportPng: () => string };
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
-// 브러시 사용 중 페이지 스크롤용 우측 레일 — 캔버스가 터치를 잡아 스크롤이 막히는
-// 모바일 문제 해결. 레일 위 터치 Y 위치에 비례해 페이지를 스크롤한다(스크롤바 썸).
-function BrushScrollRail() {
-  const [frac, setFrac] = useState(0);
-  const railRef = useRef<HTMLDivElement>(null);
-  // 드래그 시작 시점의 기준값 — 절대 위치가 아니라 손가락 이동량(델타)으로 스크롤한다.
-  const dragRef = useRef<{ startY: number; startScroll: number; gain: number } | null>(null);
-
-  useEffect(() => {
-    const update = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setFrac(max > 0 ? Math.min(1, window.scrollY / max) : 0);
-    };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
-  }, []);
-
-  const down = (e: ReactPointerEvent) => {
-    const railH = railRef.current?.getBoundingClientRect().height ?? 1;
-    const travel = Math.max(1, railH - 48); // 썸(h-12=48px)을 제외한 이동 범위
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    // 시작 기준 저장 — 누르는 순간엔 스크롤이 튀지 않고, 이후 손가락 이동량만큼만 스크롤.
-    dragRef.current = {
-      startY: e.clientY,
-      startScroll: window.scrollY,
-      gain: max > 0 ? max / travel : 0,
-    };
-    try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {
-      /* 일부 환경에서 비활성 포인터면 throw — 무시 */
-    }
-  };
-  const move = (e: ReactPointerEvent) => {
-    const d = dragRef.current;
-    if (!d) return;
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    const target = Math.max(0, Math.min(max, d.startScroll + (e.clientY - d.startY) * d.gain));
-    window.scrollTo(0, target);
-  };
-  const up = () => {
-    dragRef.current = null;
-  };
-
-  return (
-    <div
-      ref={railRef}
-      onPointerDown={down}
-      onPointerMove={move}
-      onPointerUp={up}
-      onPointerCancel={up}
-      aria-label="페이지 스크롤"
-      className="fixed right-1 top-[12dvh] z-40 flex h-[76dvh] w-8 items-center justify-center rounded-full bg-white/60 shadow ring-1 ring-primary/30 backdrop-blur-sm"
-      style={{ touchAction: "none" }}
-    >
-      <div className="pointer-events-none relative h-full w-1.5 rounded-full bg-primary/25">
-        <div
-          className="absolute left-1/2 h-12 w-4 -translate-x-1/2 rounded-full bg-primary shadow-md ring-2 ring-white"
-          style={{ top: `calc(${frac} * (100% - 3rem))` }}
-        />
-      </div>
-      <span className="pointer-events-none absolute -top-4 text-[11px] font-bold text-primary">
-        ↕
-      </span>
-    </div>
-  );
-}
-
 const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; height: number }>(
   function PhotoEditor({ src, width, height }, ref) {
     const stageRef = useRef<HTMLDivElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
     const baseImgRef = useRef<HTMLImageElement | null>(null);
-    const drawingRef = useRef<{ points: Pt[] } | null>(null);
     const dragIdRef = useRef<string | null>(null);
     const orderRef = useRef(0);
     const nextOrder = () => ++orderRef.current;
 
     const [tool, setTool] = useState<EditorTool>("none");
-    const [isCoarse] = useState(
-      () => typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches,
-    );
     const [stickers, setStickers] = useState<StickerItem[]>([]);
-    const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [color, setColor] = useState(BRUSH_COLORS[0]);
-    const [sizeIdx, setSizeIdx] = useState(1);
     const toolbarBar = useKeyedCrop(editToolbar, TOOLBAR_CROP);
 
     useEffect(() => {
@@ -174,37 +80,6 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
       };
     }, [src]);
 
-    const drawStroke = (ctx: CanvasRenderingContext2D, st: Stroke) => {
-      if (!st.points.length) return;
-      if (st.points.length === 1) {
-        const p = st.points[0];
-        ctx.fillStyle = st.color;
-        ctx.beginPath();
-        ctx.arc(p.fx * width, p.fy * height, (st.widthFrac * width) / 2, 0, Math.PI * 2);
-        ctx.fill();
-        return;
-      }
-      ctx.strokeStyle = st.color;
-      ctx.lineWidth = st.widthFrac * width;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(st.points[0].fx * width, st.points[0].fy * height);
-      for (let i = 1; i < st.points.length; i++)
-        ctx.lineTo(st.points[i].fx * width, st.points[i].fy * height);
-      ctx.stroke();
-    };
-
-    // strokes 변경 시 전체 다시 그리기 (되돌리기 반영)
-    useEffect(() => {
-      const cv = canvasRef.current;
-      if (!cv) return;
-      const ctx = cv.getContext("2d")!;
-      ctx.clearRect(0, 0, cv.width, cv.height);
-      for (const st of strokes) drawStroke(ctx, st);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [strokes, width, height]);
-
     useImperativeHandle(
       ref,
       () => ({
@@ -214,7 +89,6 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
           out.height = height;
           const ctx = out.getContext("2d")!;
           if (baseImgRef.current) ctx.drawImage(baseImgRef.current, 0, 0, width, height);
-          for (const st of strokes) drawStroke(ctx, st);
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           for (const s of stickers) {
@@ -225,57 +99,8 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
           return out.toDataURL("image/png");
         },
       }),
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [strokes, stickers, width, height],
+      [stickers, width, height],
     );
-
-    // ── 브러시 ──
-    const ptFrom = (e: ReactPointerEvent): Pt => {
-      const r = canvasRef.current!.getBoundingClientRect();
-      return {
-        fx: clamp01((e.clientX - r.left) / r.width),
-        fy: clamp01((e.clientY - r.top) / r.height),
-      };
-    };
-    const brushDown = (e: ReactPointerEvent) => {
-      if (tool !== "brush") return;
-      e.preventDefault();
-      canvasRef.current!.setPointerCapture(e.pointerId);
-      const p = ptFrom(e);
-      drawingRef.current = { points: [p] };
-      const ctx = canvasRef.current!.getContext("2d")!;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(p.fx * width, p.fy * height, (BRUSH_SIZES[sizeIdx] * width) / 2, 0, Math.PI * 2);
-      ctx.fill();
-    };
-    const brushMove = (e: ReactPointerEvent) => {
-      if (!drawingRef.current) return;
-      const pts = drawingRef.current.points;
-      const p = ptFrom(e);
-      const a = pts[pts.length - 1];
-      pts.push(p);
-      const ctx = canvasRef.current!.getContext("2d")!;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = BRUSH_SIZES[sizeIdx] * width;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(a.fx * width, a.fy * height);
-      ctx.lineTo(p.fx * width, p.fy * height);
-      ctx.stroke();
-    };
-    const brushUp = () => {
-      if (!drawingRef.current) return;
-      const stroke: Stroke = {
-        color,
-        widthFrac: BRUSH_SIZES[sizeIdx],
-        points: drawingRef.current.points,
-        order: nextOrder(),
-      };
-      drawingRef.current = null;
-      setStrokes((a) => [...a, stroke]);
-    };
 
     // ── 스티커 ──
     const addSticker = (char: string) => {
@@ -301,7 +126,6 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
       );
     };
     const stickerDown = (e: ReactPointerEvent, s: StickerItem) => {
-      if (tool === "brush") return;
       e.stopPropagation();
       setSelectedId(s.id);
       dragIdRef.current = s.id;
@@ -318,28 +142,23 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
       dragIdRef.current = null;
     };
 
-    // ── 되돌리기 (가장 최근에 추가된 스티커/획 제거) ──
+    // ── 되돌리기 (가장 최근에 추가된 스티커 제거) ──
     const undo = () => {
       const maxSticker = stickers.reduce((m, s) => Math.max(m, s.order), -1);
-      const maxStroke = strokes.reduce((m, s) => Math.max(m, s.order), -1);
-      if (maxSticker < 0 && maxStroke < 0) return;
-      if (maxSticker > maxStroke) {
-        setStickers((a) => a.filter((s) => s.order !== maxSticker));
-        if (selectedId && stickers.find((s) => s.order === maxSticker)?.id === selectedId)
-          setSelectedId(null);
-      } else {
-        setStrokes((a) => a.filter((s) => s.order !== maxStroke));
-      }
+      if (maxSticker < 0) return;
+      setStickers((a) => a.filter((s) => s.order !== maxSticker));
+      if (selectedId && stickers.find((s) => s.order === maxSticker)?.id === selectedId)
+        setSelectedId(null);
     };
 
-    const hasEdits = stickers.length > 0 || strokes.length > 0;
+    const hasEdits = stickers.length > 0;
 
     return (
       <div>
         <div
           ref={stageRef}
           onPointerDown={(e) => {
-            if (tool !== "brush" && e.target === e.currentTarget) setSelectedId(null);
+            if (e.target === e.currentTarget) setSelectedId(null);
           }}
           className="relative mx-auto overflow-hidden rounded-2xl ring-1 ring-border"
           style={{
@@ -355,21 +174,6 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
             className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
             style={{ zIndex: 0 }}
           />
-          <canvas
-            ref={canvasRef}
-            width={width}
-            height={height}
-            className="absolute inset-0 h-full w-full"
-            style={{
-              zIndex: 1,
-              pointerEvents: tool === "brush" ? "auto" : "none",
-              touchAction: "none",
-            }}
-            onPointerDown={brushDown}
-            onPointerMove={brushMove}
-            onPointerUp={brushUp}
-            onPointerCancel={brushUp}
-          />
           {stickers.map((s) => (
             <div
               key={s.id}
@@ -383,7 +187,6 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
                 top: `${s.fy * 100}%`,
                 fontSize: `${s.sizeFrac * 100}cqw`,
                 touchAction: "none",
-                pointerEvents: tool === "brush" ? "none" : "auto",
                 zIndex: selectedId === s.id ? 3 : 2,
               }}
             >
@@ -405,8 +208,8 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
           ))}
         </div>
 
-        {/* 툴 토글 — edit_toolbar 에셋(1x3 크림 바) 위에 셀별로 아이콘+글자 오버레이 */}
-        <div className="relative mt-3 w-full select-none">
+        {/* 툴 토글 — edit_toolbar 에셋(크림 박스 2칸) 위에 셀별로 아이콘+글자 오버레이 */}
+        <div className="relative mx-auto mt-3 w-2/3 select-none">
           <img src={toolbarBar} alt="" draggable={false} className="w-full select-none" />
           {[
             {
@@ -422,16 +225,6 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
               active: tool === "sticker",
               disabled: false,
               onClick: () => setTool((t) => (t === "sticker" ? "none" : "sticker")),
-            },
-            {
-              icon: "✏️",
-              label: "브러시",
-              active: tool === "brush",
-              disabled: false,
-              onClick: () => {
-                setTool((t) => (t === "brush" ? "none" : "brush"));
-                setSelectedId(null);
-              },
             },
           ].map((b, i) => (
             <button
@@ -498,47 +291,6 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
             )}
           </div>
         )}
-
-        {tool === "brush" && (
-          <div className="festival-card mt-3 p-3">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {BRUSH_COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  aria-label={`색상 ${c}`}
-                  className={`h-7 w-7 rounded-full ring-2 transition ${color === c ? "scale-110 ring-primary" : "ring-border"}`}
-                  style={{ background: c }}
-                />
-              ))}
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-3">
-              <span className="text-sm font-bold text-muted-foreground">굵기</span>
-              {BRUSH_SIZES.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSizeIdx(i)}
-                  className={`grid h-9 w-9 place-items-center rounded-full transition ${sizeIdx === i ? "bg-primary" : "bg-secondary"}`}
-                >
-                  <span
-                    className="rounded-full"
-                    style={{
-                      width: `${6 + i * 5}px`,
-                      height: `${6 + i * 5}px`,
-                      background:
-                        sizeIdx === i
-                          ? "var(--color-primary-foreground)"
-                          : "var(--color-muted-foreground)",
-                    }}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 브러시 중 페이지 스크롤용 우측 레일 (터치 기기에서만) */}
-        {tool === "brush" && isCoarse && <BrushScrollRail />}
       </div>
     );
   },
