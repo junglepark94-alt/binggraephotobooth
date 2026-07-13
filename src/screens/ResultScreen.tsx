@@ -6,10 +6,10 @@ import {
   useRef,
   useState,
 } from "react";
-import editToolbar from "@/assets/edit_toolbar.png";
-import resultActions from "@/assets/result_actions.png";
-import backButton from "@/assets/back_button.png";
-import selectNote from "@/assets/select_note.png";
+import editToolbar from "@/assets/edit_toolbar.webp";
+import resultActions from "@/assets/result_actions.webp";
+import backButton from "@/assets/back_button.webp";
+import selectNote from "@/assets/select_note.webp";
 import { FestivalSelectBg } from "@/components/common";
 import { FRAMES, type FrameKey } from "@/data/frames";
 import { type Crop, useKeyedCrop, useWhiteKeyed } from "@/lib/imageHooks";

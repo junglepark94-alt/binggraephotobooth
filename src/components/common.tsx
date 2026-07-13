@@ -1,9 +1,9 @@
 import { type ReactNode, useId } from "react";
-import btnImg from "@/assets/button_trim.png";
-import logo from "@/assets/logo_trim.png";
-import selectButton from "@/assets/select_button.png";
-import selectBg from "@/assets/select_bg.png";
-import windowImg from "@/assets/window_trim.png";
+import btnImg from "@/assets/button_trim.webp";
+import logo from "@/assets/logo_trim.webp";
+import selectButton from "@/assets/select_button.webp";
+import selectBg from "@/assets/select_bg.webp";
+import windowImg from "@/assets/window_trim.webp";
 import { useWhiteKeyed } from "@/lib/imageHooks";
 
 // 상단 타이틀 로고 + 리본 곡선 부제 — 메인/엔드 화면 공용.

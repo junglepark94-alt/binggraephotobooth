@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import navIconPhoto from "@/assets/nav_icon_photo.png";
+import navIconPhoto from "@/assets/nav_icon_photo.webp";
 import { FestivalSelectBg, SelectButton, WindowDialog, WindowPanel } from "@/components/common";
 import { FRAMES, type FrameKey } from "@/data/frames";
 import { useWhiteKeyed } from "@/lib/imageHooks";

@@ -1,4 +1,4 @@
-import mainBg from "@/assets/main_bg.png";
+import mainBg from "@/assets/main_bg.webp";
 import { ImageButton, KingdomLogo } from "@/components/common";
 
 // 메인 화면 (스토리보드 02 MAIN SCREEN) — 배경 일러스트 + 로고 + 게임 시작 버튼.

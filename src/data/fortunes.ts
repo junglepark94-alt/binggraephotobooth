@@ -1,13 +1,13 @@
-import imgBravocone from "@/assets/bravocone.png";
-import imgNougarbar from "@/assets/nougarbar.png";
-import imgHodumaru from "@/assets/hodumaru.png";
-import imgYomamte from "@/assets/yomamte.png";
-import imgBabambar from "@/assets/babambar.png";
-import imgTogether from "@/assets/together.jpg";
-import imgPollapo from "@/assets/pollapo.png";
-import imgTwinbar from "@/assets/twinbar.png";
-import imgBananamilk from "@/assets/bananamilk.png";
-import imgMelona from "@/assets/melona.png";
+import imgBravocone from "@/assets/bravocone.webp";
+import imgNougarbar from "@/assets/nougarbar.webp";
+import imgHodumaru from "@/assets/hodumaru.webp";
+import imgYomamte from "@/assets/yomamte.webp";
+import imgBabambar from "@/assets/babambar.webp";
+import imgTogether from "@/assets/together.webp";
+import imgPollapo from "@/assets/pollapo.webp";
+import imgTwinbar from "@/assets/twinbar.webp";
+import imgBananamilk from "@/assets/bananamilk.webp";
+import imgMelona from "@/assets/melona.webp";
 
 export type Fortune = { name: string; img: string; luck: number; message: string };
 

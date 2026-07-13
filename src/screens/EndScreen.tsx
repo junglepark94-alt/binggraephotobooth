@@ -1,4 +1,4 @@
-import endBg from "@/assets/end_bg.png";
+import endBg from "@/assets/end_bg.webp";
 import { KingdomLogo, SelectButton, WindowDialog } from "@/components/common";
 
 // 축제 종료 화면 — 노을 진 왕국 배경 + 로고 + 안내 다이얼로그.

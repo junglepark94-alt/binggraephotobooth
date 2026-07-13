@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import selectNote from "@/assets/select_note.png";
+import selectNote from "@/assets/select_note.webp";
 import { FestivalSelectBg, SelectButton } from "@/components/common";
 import { FRAMES, type FrameKey } from "@/data/frames";
 import { useWhiteKeyed } from "@/lib/imageHooks";

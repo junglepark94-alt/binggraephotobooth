@@ -1,10 +1,10 @@
 import { type Dispatch, type SetStateAction, useState } from "react";
-import festivalBg from "@/assets/festival_bg.png";
-import navBarEmpty from "@/assets/nav_bar_empty.png";
-import navIconPhoto from "@/assets/nav_icon_photo.png";
-import navIconClover from "@/assets/nav_icon_clover.png";
-import navIconCandy from "@/assets/nav_icon_candy.png";
-import navIconHeart from "@/assets/nav_icon_heart.png";
+import festivalBg from "@/assets/festival_bg.webp";
+import navBarEmpty from "@/assets/nav_bar_empty.webp";
+import navIconPhoto from "@/assets/nav_icon_photo.webp";
+import navIconClover from "@/assets/nav_icon_clover.webp";
+import navIconCandy from "@/assets/nav_icon_candy.webp";
+import navIconHeart from "@/assets/nav_icon_heart.webp";
 import { Hotspot } from "@/components/common";
 import type { Inventory } from "@/lib/game";
 import { useWhiteKeyed, useWhiteKeyedTrimmed } from "@/lib/imageHooks";

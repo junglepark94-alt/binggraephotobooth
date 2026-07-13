@@ -5,8 +5,8 @@ import {
   useRef,
   useState,
 } from "react";
-import fortuneButton from "@/assets/fortune_button.png";
-import selectNote from "@/assets/select_note.png";
+import fortuneButton from "@/assets/fortune_button.webp";
+import selectNote from "@/assets/select_note.webp";
 import { FestivalSelectBg, WindowPanel } from "@/components/common";
 import { FORTUNES } from "@/data/fortunes";
 import { type Crop, useKeyedCrop, useNukki, useWhiteKeyed } from "@/lib/imageHooks";

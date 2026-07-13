@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import mainBg from "@/assets/main_bg.png";
-import windowImg from "@/assets/window_trim.png";
-import icecreamLoading from "@/assets/icecream_loading.png";
+import mainBg from "@/assets/main_bg.webp";
+import windowImg from "@/assets/window_trim.webp";
+import icecreamLoading from "@/assets/icecream_loading.webp";
 import { ImageButton } from "@/components/common";
 import { useWhiteKeyed } from "@/lib/imageHooks";
 

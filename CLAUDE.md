@@ -55,12 +55,15 @@ bunx tsc --noEmit  # 타입체크
   없으면 인메모리. `/admin`(`src/routes/admin.tsx`)은 **`ADMIN_PASSWORD` 환경변수 필수** —
   미설정 시 어드민 기능이 비활성화된다 (소스에 기본 비밀번호를 두지 말 것).
 - `src/lib/imageHooks.ts` — 에셋 후처리 훅(흰 배경 키잉/크롭/누끼/트림, 모듈 레벨 캐시)
-- `src/assets/` — 프레임 4종(binggraeus/melonaprince/bravocone/bananamilk), 배경·버튼·아이콘 에셋
+- `src/assets/` — 프레임 4종(binggraeus/melonaprince/bravocone/bananamilk), 배경·버튼·아이콘 에셋.
+  대역폭 절감을 위해 전부 **WebP**로 관리한다: 프레임·아이콘·키잉/합성 대상은 **무손실**(픽셀이
+  원본 PNG와 동일 → 초록 감지/누끼/크롭 동작 보존), 순수 표시용 배경·로고만 **손실**(q82~88).
+  파비콘(`favicon-32.png`/`favicon-180.png`)만 PNG로 남긴다.
 - `src/routes/__root.tsx` — HTML 셸, 메타태그, 404/에러 컴포넌트, react-query Provider
 - `src/server.ts` / `src/start.ts` — SSR 에러를 브랜드 에러 페이지로 정규화하는 래퍼
 
 ### 프레임을 추가/수정하려면
-1. `src/assets/`에 프레임 PNG 추가 — 사진이 들어갈 자리는 **순수 초록색**으로 채운다 (감지 기준: `g>180, r<120, b<120, g>r+80, g>b+80`, `photobooth.ts`의 `isPlaceholderGreen`).
+1. 프레임을 만든 뒤 **무손실 WebP**로 변환해 `src/assets/`에 넣는다(초록 감지가 원본 픽셀에 의존하므로 손실 압축 금지) — 사진이 들어갈 자리는 **순수 초록색**으로 채운다 (감지 기준: `g>180, r<120, b<120, g>r+80, g>b+80`, `photobooth.ts`의 `isPlaceholderGreen`).
 2. (장식이 슬롯을 침범하는 프레임이면) 슬롯별 오버레이 PNG 추가 — 새 프레임들은 장식이
    프레임 이미지에 포함돼 있어 투명 픽셀(`TRANSPARENT_PX`)로 충분하다.
 3. `src/data/frames.ts`의 `FRAMES` 레코드와 `FrameKey`(`src/lib/photobooth.ts`)에 키 등록.

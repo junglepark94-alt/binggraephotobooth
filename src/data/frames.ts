@@ -1,7 +1,7 @@
-import frameBinggraeus from "@/assets/frame_binggraeus.png";
-import frameMelonaprince from "@/assets/frame_melonaprince.png";
-import frameBravocone from "@/assets/frame_bravocone.png";
-import frameBananamilk from "@/assets/frame_bananamilk.png";
+import frameBinggraeus from "@/assets/frame_binggraeus.webp";
+import frameMelonaprince from "@/assets/frame_melonaprince.webp";
+import frameBravocone from "@/assets/frame_bravocone.webp";
+import frameBananamilk from "@/assets/frame_bananamilk.webp";
 import type { FrameKey } from "@/lib/photobooth";
 
 export type { FrameKey };
