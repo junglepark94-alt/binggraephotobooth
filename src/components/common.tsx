@@ -97,12 +97,14 @@ export function SelectButton({
 }
 
 // 배경 일러스트 위의 투명 클릭 영역. left/top은 영역의 중심.
+// cta를 주면 영역 중앙에 토스 스타일 파란 버튼을 띄우고, pulse면 버튼 위에 느낌표 배지를 함께 붙인다.
 export function Hotspot({
   left,
   top,
   width,
   height,
   label,
+  cta,
   onClick,
   pulse,
 }: {
@@ -111,6 +113,7 @@ export function Hotspot({
   width: string;
   height: string;
   label: string;
+  cta?: string;
   onClick: () => void;
   pulse?: boolean;
 }) {
@@ -121,10 +124,23 @@ export function Hotspot({
       style={{ left, top, width, height }}
       className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-2xl ring-2 ring-transparent transition hover:ring-white/70 active:scale-95"
     >
-      {pulse && (
-        <span className="absolute right-0 top-0 grid h-5 w-5 animate-bounce place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow">
-          !
+      {cta ? (
+        <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <span className="relative inline-flex items-center whitespace-nowrap rounded-full bg-[#3182F6] px-3.5 py-1.5 text-[13px] font-bold text-white shadow-[0_4px_12px_rgba(49,130,246,0.45)] ring-1 ring-white/60">
+            {cta}
+            {pulse && (
+              <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 animate-bounce place-items-center rounded-full bg-primary text-[10px] font-extrabold text-primary-foreground shadow ring-1 ring-white">
+                !
+              </span>
+            )}
+          </span>
         </span>
+      ) : (
+        pulse && (
+          <span className="absolute right-0 top-0 grid h-5 w-5 animate-bounce place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow">
+            !
+          </span>
+        )
       )}
     </button>
   );

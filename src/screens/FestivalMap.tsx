@@ -107,6 +107,7 @@ export function FestivalMap({
           width="38%"
           height="21%"
           label="광장 게시판"
+          cta="입장하기"
           onClick={onBoard}
           pulse
         />
@@ -116,6 +117,7 @@ export function FestivalMap({
           width="31%"
           height="26%"
           label="사진 부스"
+          cta="촬영하기"
           onClick={onPhoto}
           pulse
         />
@@ -125,6 +127,7 @@ export function FestivalMap({
           width="24%"
           height="32%"
           label="뽑기 기계"
+          cta="뽑기하러 가기"
           onClick={tapDraw}
           pulse={inv.clover}
         />
@@ -134,6 +137,7 @@ export function FestivalMap({
           width="22%"
           height="15%"
           label="왕자"
+          cta="물어보기"
           onClick={tapPrince}
           pulse={inv.candy && !inv.heart}
         />
@@ -143,6 +147,7 @@ export function FestivalMap({
           width="26%"
           height="13%"
           label="강아지"
+          cta="사탕받기"
           onClick={tapDog}
           pulse={!inv.candy}
         />
@@ -152,6 +157,7 @@ export function FestivalMap({
           width="62%"
           height="18%"
           label="주민"
+          cta="물어보기"
           onClick={tapResident}
           pulse={inv.photo && !inv.clover}
         />
@@ -211,7 +217,7 @@ export function FestivalMap({
               <span className="mx-0.5 -mt-0.5 inline-grid h-5 w-5 place-items-center rounded-full bg-primary align-middle text-xs font-extrabold text-primary-foreground shadow">
                 !
               </span>{" "}
-              표시들을 하나씩 눌러봐.
+              파란 버튼들을 하나씩 눌러봐.
               <span className="mt-2 block text-xs font-medium text-muted-foreground">
                 터치하면 닫혀요
               </span>
