@@ -100,14 +100,15 @@ export function FestivalMap({
         </button>
 
         {/* 클릭 영역 (배경 위 투명 핫스팟) — 새 배경(festival_bg)에 맞춤 */}
-        {/* 좌상단 바나나맛우유·메로나 조형물 → 광장 게시판 (느낌표 상시 표시) */}
+        {/* 좌상단 게시판(폴라로이드가 붙은 나무 보드) → 광장 게시판 (느낌표 상시 표시) */}
         <Hotspot
-          left="18%"
-          top="28%"
-          width="38%"
+          left="30%"
+          top="27%"
+          width="28%"
           height="21%"
           label="광장 게시판"
           cta="입장하기"
+          ctaY={58}
           onClick={onBoard}
           pulse
         />
