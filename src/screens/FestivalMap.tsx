@@ -127,7 +127,7 @@ export function FestivalMap({
           width="24%"
           height="32%"
           label="뽑기 기계"
-          cta="뽑기하러 가기"
+          cta="뽑기하기"
           onClick={tapDraw}
           pulse={inv.clover}
         />
@@ -138,6 +138,7 @@ export function FestivalMap({
           height="15%"
           label="왕자"
           cta="물어보기"
+          ctaY={95}
           onClick={tapPrince}
           pulse={inv.candy && !inv.heart}
         />
@@ -148,6 +149,7 @@ export function FestivalMap({
           height="13%"
           label="강아지"
           cta="사탕받기"
+          ctaY={95}
           onClick={tapDog}
           pulse={!inv.candy}
         />
@@ -158,6 +160,7 @@ export function FestivalMap({
           height="18%"
           label="주민"
           cta="물어보기"
+          ctaY={12}
           onClick={tapResident}
           pulse={inv.photo && !inv.clover}
         />

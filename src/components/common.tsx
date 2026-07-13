@@ -97,7 +97,9 @@ export function SelectButton({
 }
 
 // 배경 일러스트 위의 투명 클릭 영역. left/top은 영역의 중심.
-// cta를 주면 영역 중앙에 토스 스타일 파란 버튼을 띄우고, pulse면 버튼 위에 느낌표 배지를 함께 붙인다.
+// cta를 주면 토스 스타일 파란 버튼을 띄우고, pulse면 버튼 위에 느낌표 배지를 함께 붙인다.
+// ctaY: 버튼의 세로 위치(핫스팟 높이 대비 %). 기본 50(중앙). 캐릭터를 가리지 않게
+//   발밑(예: 90)이나 머리 위(예: 5)로 내리거나 올릴 수 있다. 100 초과=박스 아래로.
 export function Hotspot({
   left,
   top,
@@ -105,6 +107,7 @@ export function Hotspot({
   height,
   label,
   cta,
+  ctaY = 50,
   onClick,
   pulse,
 }: {
@@ -114,6 +117,7 @@ export function Hotspot({
   height: string;
   label: string;
   cta?: string;
+  ctaY?: number;
   onClick: () => void;
   pulse?: boolean;
 }) {
@@ -125,7 +129,10 @@ export function Hotspot({
       className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-2xl ring-2 ring-transparent transition hover:ring-white/70 active:scale-95"
     >
       {cta ? (
-        <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <span
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ top: `${ctaY}%` }}
+        >
           <span className="relative inline-flex items-center whitespace-nowrap rounded-full bg-[#3182F6] px-3.5 py-1.5 text-[13px] font-bold text-white shadow-[0_4px_12px_rgba(49,130,246,0.45)] ring-1 ring-white/60">
             {cta}
             {pulse && (
