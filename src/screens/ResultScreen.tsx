@@ -1,6 +1,7 @@
 import {
   type PointerEvent as ReactPointerEvent,
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -66,39 +67,51 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
     const [tool, setTool] = useState<EditorTool>("none");
     const [stickers, setStickers] = useState<StickerItem[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [baseReady, setBaseReady] = useState(false);
+    // 편집을 마친 상태에서 보여줄 "스티커까지 구워 넣은" 이미지. 이걸 그대로 <img>로 띄워야
+    // 모바일에서 길게 눌러 저장했을 때 화면과 똑같은 결과물이 저장된다.
+    const [flatSrc, setFlatSrc] = useState<string | null>(null);
+    const editing = tool === "sticker";
     const toolbarBar = useKeyedCrop(editToolbar, TOOLBAR_CROP);
 
     useEffect(() => {
       let cancelled = false;
+      setBaseReady(false);
       loadImage(src).then((img) => {
-        if (!cancelled) baseImgRef.current = img;
+        if (cancelled) return;
+        baseImgRef.current = img;
+        setBaseReady(true);
       });
       return () => {
         cancelled = true;
       };
     }, [src]);
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        exportPng: () => {
-          const out = document.createElement("canvas");
-          out.width = width;
-          out.height = height;
-          const ctx = out.getContext("2d")!;
-          if (baseImgRef.current) ctx.drawImage(baseImgRef.current, 0, 0, width, height);
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          for (const s of stickers) {
-            const fs = s.sizeFrac * width;
-            ctx.font = `${fs}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-            ctx.fillText(s.char, s.fx * width, s.fy * height);
-          }
-          return out.toDataURL("image/png");
-        },
-      }),
-      [stickers, width, height],
-    );
+    // 원본 스트립 + 스티커를 원본 해상도로 합쳐 PNG data URL로. 저장/공유(exportPng)와
+    // 화면에 띄우는 완성본(flatSrc)이 같은 그림을 쓰도록 한곳에서 그린다.
+    const renderPng = useCallback(() => {
+      const out = document.createElement("canvas");
+      out.width = width;
+      out.height = height;
+      const ctx = out.getContext("2d")!;
+      if (baseImgRef.current) ctx.drawImage(baseImgRef.current, 0, 0, width, height);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const s of stickers) {
+        const fs = s.sizeFrac * width;
+        ctx.font = `${fs}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+        ctx.fillText(s.char, s.fx * width, s.fy * height);
+      }
+      return out.toDataURL("image/png");
+    }, [stickers, width, height]);
+
+    useImperativeHandle(ref, () => ({ exportPng: renderPng }), [renderPng]);
+
+    // 편집을 마쳤을 때만 합성한다 — 드래그 중 매 프레임 toDataURL을 돌리면 버벅인다.
+    useEffect(() => {
+      if (editing || !baseReady) return;
+      setFlatSrc(renderPng());
+    }, [editing, baseReady, renderPng]);
 
     // ── 스티커 ──
     const addSticker = (char: string) => {
@@ -165,45 +178,50 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
             background: "#fdf9ee",
           }}
         >
+          {/* 편집 중이 아니면 스티커까지 합친 완성본을 그대로 띄운다 — 이 <img>를 길게 누르면
+              브라우저 기본 메뉴로 화면과 똑같은 사진이 저장된다(pointer-events/터치 콜아웃 허용). */}
           <img
-            src={src}
+            src={editing ? src : (flatSrc ?? src)}
             alt="나의 네컷 결과"
             draggable={false}
-            className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
-            style={{ zIndex: 0 }}
+            className={`absolute inset-0 h-full w-full object-contain ${
+              editing ? "pointer-events-none select-none" : ""
+            }`}
+            style={{ zIndex: 0, WebkitTouchCallout: editing ? "none" : "default" }}
           />
-          {stickers.map((s) => (
-            <div
-              key={s.id}
-              onPointerDown={(e) => stickerDown(e, s)}
-              onPointerMove={(e) => stickerMove(e, s)}
-              onPointerUp={stickerUp}
-              onPointerCancel={stickerUp}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-move select-none leading-none ${selectedId === s.id ? "rounded-md outline outline-2 outline-primary" : ""}`}
-              style={{
-                left: `${s.fx * 100}%`,
-                top: `${s.fy * 100}%`,
-                fontSize: `${s.sizeFrac * 100}cqw`,
-                touchAction: "none",
-                zIndex: selectedId === s.id ? 3 : 2,
-              }}
-            >
-              {s.char}
-              {selectedId === s.id && (
-                <button
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    removeSticker(s.id);
-                  }}
-                  aria-label="스티커 삭제"
-                  className="absolute -right-2 -top-2 grid h-5 w-5 place-items-center rounded-full bg-destructive font-bold text-white shadow"
-                  style={{ fontSize: 11, lineHeight: 1 }}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
+          {editing &&
+            stickers.map((s) => (
+              <div
+                key={s.id}
+                onPointerDown={(e) => stickerDown(e, s)}
+                onPointerMove={(e) => stickerMove(e, s)}
+                onPointerUp={stickerUp}
+                onPointerCancel={stickerUp}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-move select-none leading-none ${selectedId === s.id ? "rounded-md outline outline-2 outline-primary" : ""}`}
+                style={{
+                  left: `${s.fx * 100}%`,
+                  top: `${s.fy * 100}%`,
+                  fontSize: `${s.sizeFrac * 100}cqw`,
+                  touchAction: "none",
+                  zIndex: selectedId === s.id ? 3 : 2,
+                }}
+              >
+                {s.char}
+                {selectedId === s.id && (
+                  <button
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      removeSticker(s.id);
+                    }}
+                    aria-label="스티커 삭제"
+                    className="absolute -right-2 -top-2 grid h-5 w-5 place-items-center rounded-full bg-destructive font-bold text-white shadow"
+                    style={{ fontSize: 11, lineHeight: 1 }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
         </div>
 
         {/* 툴 토글 — edit_toolbar 에셋(크림 박스 2칸) 위에 셀별로 아이콘+글자 오버레이 */}
