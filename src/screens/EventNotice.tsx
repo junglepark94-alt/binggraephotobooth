@@ -1,10 +1,16 @@
 import { FestivalSelectBg, SelectButton } from "@/components/common";
-import { EVENT_NOTICE_BODY, EVENT_NOTICE_TITLE, KAKAO_CHAT_URL } from "@/data/event";
+import {
+  EVENT_NOTICE_INTRO,
+  EVENT_NOTICE_SECTIONS,
+  EVENT_NOTICE_TITLE,
+  KAKAO_CHAT_URL,
+} from "@/data/event";
 
 // 이벤트 공지 화면 — 지도의 게시판 핫스팟과 결과 화면의 "이벤트 응모하기"가 함께 들어온다.
-// 공지 문구를 보여주고, 카톡 1:1 채팅방으로 넘겨주는 것이 전부다 (서버 통신 없음).
+// 공지 문구를 보여주고, 카카오톡 오픈채팅으로 넘겨주는 것이 전부다 (서버 통신 없음).
 export function EventNotice({ onBack }: { onBack: () => void }) {
   const linkReady = KAKAO_CHAT_URL.trim().length > 0;
+  const hasNotice = EVENT_NOTICE_SECTIONS.length > 0;
 
   return (
     <FestivalSelectBg onBack={onBack}>
@@ -14,15 +20,24 @@ export function EventNotice({ onBack }: { onBack: () => void }) {
         </h2>
 
         <div className="festival-card p-5">
-          {EVENT_NOTICE_BODY.length > 0 ? (
-            <div className="space-y-2.5">
-              {EVENT_NOTICE_BODY.map((line, i) => (
-                <p
-                  key={i}
-                  className="whitespace-pre-line text-[13px] leading-relaxed text-amber-900"
-                >
-                  {line}
-                </p>
+          {hasNotice ? (
+            <div className="space-y-4">
+              <p className="text-center text-[13px] font-bold leading-relaxed text-primary">
+                {EVENT_NOTICE_INTRO}
+              </p>
+              {EVENT_NOTICE_SECTIONS.map((s) => (
+                <div key={s.heading}>
+                  <h3 className="font-display text-[14px] font-extrabold text-amber-900">
+                    [{s.heading}]
+                  </h3>
+                  <ul className="mt-1 space-y-1">
+                    {s.lines.map((line) => (
+                      <li key={line} className="text-[13px] leading-relaxed text-amber-900/85">
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
             </div>
           ) : (
