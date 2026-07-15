@@ -37,6 +37,15 @@ export function EventNotice({ onBack }: { onBack: () => void }) {
                       </li>
                     ))}
                   </ul>
+                  {s.image && (
+                    <img
+                      src={s.image.src}
+                      alt={s.image.alt}
+                      draggable={false}
+                      loading="lazy"
+                      className="mt-2 w-full select-none rounded-xl ring-1 ring-amber-200"
+                    />
+                  )}
                 </div>
               ))}
             </div>
