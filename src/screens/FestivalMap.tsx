@@ -58,15 +58,15 @@ export function FestivalMap({
   const tapDog = () => {
     if (!inv.candy) {
       setInv((v) => ({ ...v, candy: true }));
-      say("강아지 🐶", "아이스크림을 멋진 주인님(왕자)에게 가져다줘! 🍦");
-    } else say("강아지 🐶", "왕자님께 아이스크림을 전해줘!");
+      say("강아지 🐶", "아이스크림을 멋진 주인님(빙그레우스)에게 가져다줘! 🍦");
+    } else say("강아지 🐶", "빙그레우스님께 아이스크림을 전해줘!");
   };
   const tapPrince = () => {
     if (inv.candy && !inv.heart) {
       setInv((v) => ({ ...v, heart: true }));
-      say("왕자 🤴", "고마워! 사진 찍고 오른쪽 뽑기 기계에서 행운의 아이스크림을 뽑아봐! ❤️");
-    } else if (!inv.candy) say("왕자 🤴", "사진을 찍으면 전설의 뽑기 클로버를 준대~");
-    else say("왕자 🤴", "사진 찍고 오른쪽 뽑기 기계에서 행운의 아이스크림을 뽑아봐!");
+      say("빙그레우스 🤴", "고마워! 사진 찍고 오른쪽 뽑기 기계에서 행운의 아이스크림을 뽑아봐! ❤️");
+    } else if (!inv.candy) say("빙그레우스 🤴", "사진을 찍으면 전설의 뽑기 클로버를 준대~");
+    else say("빙그레우스 🤴", "사진 찍고 오른쪽 뽑기 기계에서 행운의 아이스크림을 뽑아봐!");
   };
   const tapResident = () => {
     if (inv.photo && !inv.clover) {
@@ -137,7 +137,7 @@ export function FestivalMap({
           top="67%"
           width="22%"
           height="15%"
-          label="왕자"
+          label="빙그레우스"
           cta="물어보기"
           ctaY={95}
           onClick={tapPrince}
