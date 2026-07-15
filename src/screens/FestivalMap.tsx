@@ -28,7 +28,7 @@ export function FestivalMap({
   setInv,
   onPhoto,
   onDraw,
-  onBoard,
+  onEvent,
   onEnd,
   introSeen,
   onIntroSeen,
@@ -37,7 +37,7 @@ export function FestivalMap({
   setInv: Dispatch<SetStateAction<Inventory>>;
   onPhoto: () => void;
   onDraw: () => void;
-  onBoard: () => void;
+  onEvent: () => void;
   onEnd: () => void;
   introSeen: boolean;
   onIntroSeen: () => void;
@@ -100,16 +100,16 @@ export function FestivalMap({
         </button>
 
         {/* 클릭 영역 (배경 위 투명 핫스팟) — 새 배경(festival_bg)에 맞춤 */}
-        {/* 좌상단 게시판(폴라로이드가 붙은 나무 보드) → 광장 게시판 (느낌표 상시 표시) */}
+        {/* 좌상단 게시판(폴라로이드가 붙은 나무 보드) → 이벤트 공지 (느낌표 상시 표시) */}
         <Hotspot
           left="30%"
           top="27%"
           width="28%"
           height="21%"
-          label="광장 게시판"
-          cta="입장하기"
+          label="이벤트 공지"
+          cta="보러가기"
           ctaY={58}
-          onClick={onBoard}
+          onClick={onEvent}
           pulse
         />
         <Hotspot

@@ -32,8 +32,8 @@ TanStack Start · React 19 · Vite 7 · Tailwind CSS 4 · shadcn/ui · Bun · Ra
 
 **Railway**를 타깃으로 한다 (Bun 서버). `bun run build` → `dist/client`(정적) + `dist/server/server.js`(SSR)
 생성 후, `bun run start`가 `serve.ts`(Bun.serve)로 정적 파일 우선 + SSR 폴백 서빙한다.
-GitHub `main` 푸시 시 Railway가 자동 빌드(`nixpacks.toml` + `railway.json`). 광장 게시판을 영구
-보관하려면 Redis를 붙이고 `REDIS_URL`을 설정한다.
+GitHub `main` 푸시 시 Railway가 자동 빌드(`nixpacks.toml` + `railway.json`). 사진은 서버로
+전송되지 않으므로 데이터베이스나 별도 환경변수 설정은 필요 없다.
 
 > `wrangler.jsonc`는 원래 Cloudflare Workers용이었으나 현재 배포에는 미사용.
 

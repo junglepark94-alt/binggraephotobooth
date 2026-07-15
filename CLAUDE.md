@@ -33,27 +33,27 @@ bunx tsc --noEmit  # 타입체크
 
 ## 아키텍처
 
-촬영·합성은 전부 **클라이언트 사이드**에서 처리된다. 사진은 사용자가 "주민들에게 자랑하기"로
-광장 게시판에 올릴 때만 서버(게시판 저장소)로 전송된다.
+촬영·합성·저장은 전부 **클라이언트 사이드**에서 처리된다. **사진은 서버로 전송되지 않는다** —
+개인정보 보호를 위해 게시판 업로드 기능을 제거했으므로, 사진을 서버로 보내는 코드를 다시 넣지 말 것.
 
 - `src/routes/index.tsx` — 단일 페이지 상태머신(`Step`, `src/lib/game.ts`). 진행 단계:
   `main → letter → map(축제 지도) → select(프레임 선택) → shoot(촬영) → result(합성/꾸미기/저장/공유)`
-  + 지도에서 분기: `draw`(아이스크림 뽑기) / `board`(광장 게시판) / `end`(축제 종료)
+  + 지도에서 분기: `draw`(아이스크림 뽑기) / `event`(이벤트 공지) / `end`(축제 종료)
 - `src/screens/` — 단계별 화면 컴포넌트:
   - `ShootScreen`: `getUserMedia`로 셀카 미리보기(좌우 반전), 카운트다운 ×4컷 캡처
   - `ResultScreen`: 4컷을 프레임에 합성한 뒤 `PhotoEditor`(같은 파일)로 꾸미기, PNG 저장 /
-    Web Share API 공유 / 광장 게시판 업로드. 스티커 좌표·크기는 이미지 대비 **비율(0~1)** 로
+    Web Share API 공유 / 이벤트 응모 진입. 스티커 좌표·크기는 이미지 대비 **비율(0~1)** 로
     저장해 화면 표시와 원본 해상도 PNG 내보내기가 일치한다. 저장/공유는 `exportPng()`
     (imperative handle)로 편집 결과를 원본 해상도로 재합성
-  - `FestivalMap`: 축제 지도 + 핫스팟 미니게임(인벤토리), `PlazaBoard`: 게시판(무한 스크롤·좋아요),
+  - `FestivalMap`: 축제 지도 + 핫스팟 미니게임(인벤토리), `EventNotice`: 이벤트 공지문 + 카톡 응모,
     `DrawScreen`: 스크래치 운세
 - `src/lib/photobooth.ts` — 핵심 이미지 로직:
   - `detectGreenSlots()` — 프레임 PNG의 **초록색 플레이스홀더** 영역을 flood-fill로 자동 감지해 사진이 들어갈 슬롯(최대 4개) 좌표를 계산
   - `fallbackSlots()` — 감지가 4개 미만이면 균등 분할 레이아웃으로 폴백
   - `composeStrip()` — 슬롯별로 사진(cover) → 오버레이 → 프레임(초록 영역 투명화) 순으로 캔버스 합성
-- `src/lib/plaza.ts` — 광장 게시판 서버 함수(RPC). 저장소는 `REDIS_URL` 있으면 Bun 내장 Redis,
-  없으면 인메모리. `/admin`(`src/routes/admin.tsx`)은 **`ADMIN_PASSWORD` 환경변수 필수** —
-  미설정 시 어드민 기능이 비활성화된다 (소스에 기본 비밀번호를 두지 말 것).
+- `src/data/event.ts` — 이벤트 공지 문구(`EVENT_NOTICE_TITLE`/`EVENT_NOTICE_BODY`)와 카카오톡
+  1:1 채팅방 링크(`KAKAO_CHAT_URL`). 문구·링크 변경은 이 파일만 고치면 되고, `KAKAO_CHAT_URL`이
+  비어 있으면 `EventNotice`가 응모 버튼을 비활성화하고 "준비 중" 안내를 띄운다.
 - `src/lib/imageHooks.ts` — 에셋 후처리 훅(흰 배경 키잉/크롭/누끼/트림, 모듈 레벨 캐시)
 - `src/assets/` — 프레임 4종(binggraeus/melonaprince/bravocone/bananamilk), 배경·버튼·아이콘 에셋.
   대역폭 절감을 위해 전부 **WebP**로 관리한다: 아이콘·키잉/합성 UI(누끼/크롭 대상)는 **무손실**

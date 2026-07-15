@@ -121,7 +121,7 @@ export function SelectScreen({
       <div className="relative mx-auto mb-7 mt-3 w-[92%] max-w-[360px]">
         <img src={noteSrc} alt="" draggable={false} className="w-full select-none" />
         <span className="absolute inset-0 flex items-center justify-center px-[13%] text-center text-[12px] font-medium leading-tight text-amber-900/80">
-          촬영 및 업로드된 사진은 서버에 저장되지 않으며 사용자 기기에서만 사용됩니다.
+          촬영한 사진은 서버로 전송되지 않으며 사용자 기기에서만 사용됩니다.
         </span>
       </div>
     </FestivalSelectBg>

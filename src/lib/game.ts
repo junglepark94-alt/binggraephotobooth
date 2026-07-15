@@ -7,7 +7,7 @@ export type Step =
   | "shoot"
   | "result"
   | "draw"
-  | "board"
+  | "event"
   | "end";
 
 export type Inventory = { photo: boolean; candy: boolean; heart: boolean; clover: boolean };

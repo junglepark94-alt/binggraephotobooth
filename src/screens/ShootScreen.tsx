@@ -35,12 +35,14 @@ export function ShootScreen({
   const f = FRAMES[frameKey];
   const photoIconSrc = useWhiteKeyed(navIconPhoto); // 카메라 아이콘(에셋)
 
-  useEffect(
-    () => () => {
+  // 마운트마다 false로 되돌린다 — StrictMode(개발)는 이펙트를 정리했다가 다시 실행하는데,
+  // ref는 그대로 살아 있어서 리셋하지 않으면 플래그가 true로 굳어 촬영 루프가 첫 컷에서 멈춘다.
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
       unmountedRef.current = true;
-    },
-    [],
-  );
+    };
+  }, []);
 
   // 프레임/슬롯 준비 — 권한 불필요, 마운트 시 미리 계산.
   // 슬롯별 오버레이(컷마다 겹쳐 들어온 캐릭터/장식)도 프레임에서 잘라 미리 만든다.
