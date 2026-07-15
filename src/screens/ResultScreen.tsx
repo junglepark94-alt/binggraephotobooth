@@ -226,7 +226,7 @@ const PhotoEditor = forwardRef<EditorHandle, { src: string; width: number; heigh
 
         {/* 꾹 눌러 저장 안내 — 편집 중에는 원본을 띄우고 있어 길게 눌러도 저장되지 않으므로 숨긴다. */}
         {!editing && (
-          <p className="mt-2 rounded-xl bg-white/70 px-3 py-2 text-center text-xs font-bold text-amber-900/80">
+          <p className="mt-2 rounded-xl bg-white/70 px-3 py-2.5 text-center text-[15px] font-bold text-amber-900/80">
             👆 사진을 꾹 눌러서 저장할 수 있어요
           </p>
         )}

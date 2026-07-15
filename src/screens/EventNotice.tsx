@@ -15,24 +15,24 @@ export function EventNotice({ onBack }: { onBack: () => void }) {
   return (
     <FestivalSelectBg onBack={onBack}>
       <div className="space-y-3 px-4 pb-10 pt-1">
-        <h2 className="text-center font-display text-lg font-extrabold text-primary drop-shadow-sm">
+        <h2 className="text-center font-display text-2xl font-extrabold text-primary drop-shadow-sm">
           {EVENT_NOTICE_TITLE}
         </h2>
 
         <div className="festival-card p-5">
           {hasNotice ? (
-            <div className="space-y-4">
-              <p className="text-center text-[13px] font-bold leading-relaxed text-primary">
+            <div className="space-y-5">
+              <p className="text-center text-[16px] font-bold leading-relaxed text-primary">
                 {EVENT_NOTICE_INTRO}
               </p>
               {EVENT_NOTICE_SECTIONS.map((s) => (
                 <div key={s.heading}>
-                  <h3 className="font-display text-[14px] font-extrabold text-amber-900">
+                  <h3 className="font-display text-[18px] font-extrabold text-amber-900">
                     [{s.heading}]
                   </h3>
-                  <ul className="mt-1 space-y-1">
+                  <ul className="mt-1.5 space-y-1.5">
                     {s.lines.map((line) => (
-                      <li key={line} className="text-[13px] leading-relaxed text-amber-900/85">
+                      <li key={line} className="text-[15px] leading-relaxed text-amber-900/85">
                         {line}
                       </li>
                     ))}
@@ -52,8 +52,8 @@ export function EventNotice({ onBack }: { onBack: () => void }) {
           ) : (
             <div className="py-8 text-center">
               <div className="text-4xl">📝</div>
-              <p className="mt-2 text-sm font-bold text-amber-900">공지문을 준비하고 있어요</p>
-              <p className="mt-1 text-xs text-muted-foreground">곧 이벤트 안내를 올려드릴게요!</p>
+              <p className="mt-2 text-base font-bold text-amber-900">공지문을 준비하고 있어요</p>
+              <p className="mt-1 text-sm text-muted-foreground">곧 이벤트 안내를 올려드릴게요!</p>
             </div>
           )}
         </div>
@@ -64,7 +64,7 @@ export function EventNotice({ onBack }: { onBack: () => void }) {
           onClick={() => window.open(KAKAO_CHAT_URL, "_blank", "noopener,noreferrer")}
         />
         {!linkReady && (
-          <p className="text-center text-xs text-muted-foreground">응모 링크는 곧 열려요!</p>
+          <p className="text-center text-sm text-muted-foreground">응모 링크는 곧 열려요!</p>
         )}
       </div>
     </FestivalSelectBg>
