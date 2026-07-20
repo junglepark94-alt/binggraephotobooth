@@ -5,6 +5,7 @@
 
 > 원본은 Lovable에서 제작되었고, 현재는 Claude Code로 이어서 개발한다.
 > 상세 개발 가이드는 [CLAUDE.md](./CLAUDE.md), 빠른 시작은 [README.md](./README.md) 참고.
+> 개인정보 검토용 안내는 [PRIVACY_REVIEW.md](./PRIVACY_REVIEW.md) 참고.
 
 ---
 
