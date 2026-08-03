@@ -40,7 +40,7 @@ export const EVENT_NOTICE_SECTIONS: {
   },
   {
     heading: "이벤트 기간",
-    lines: ["8월 3일(월) ~ 8월 14일(금)"],
+    lines: ["8월 31일(월) ~ 9월 11일(금)"],
   },
   {
     heading: "안내 사항",
