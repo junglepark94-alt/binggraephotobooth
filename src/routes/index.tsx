@@ -150,7 +150,9 @@ function App() {
         {step === "draw" && (
           <DrawScreen onBack={() => setStep("map")} onEnd={() => setStep("end")} />
         )}
-        {step === "event" && <EventNotice onBack={() => setStep(eventFrom)} />}
+        {step === "event" && (
+          <EventNotice onBack={() => setStep(eventFrom)} onShoot={() => setStep("select")} />
+        )}
         {step === "end" && <EndScreen onRestart={restart} />}
       </div>
     </div>

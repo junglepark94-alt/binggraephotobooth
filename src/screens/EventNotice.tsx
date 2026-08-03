@@ -8,7 +8,8 @@ import {
 
 // 이벤트 공지 화면 — 지도의 게시판 핫스팟과 결과 화면의 "이벤트 응모하기"가 함께 들어온다.
 // 공지 문구를 보여주고, 카카오톡 오픈채팅으로 넘겨주는 것이 전부다 (서버 통신 없음).
-export function EventNotice({ onBack }: { onBack: () => void }) {
+// onShoot: 공지 안의 "빙그레네컷을 촬영해 주세요" 하이라이트를 누르면 촬영 흐름으로 바로 이동.
+export function EventNotice({ onBack, onShoot }: { onBack: () => void; onShoot: () => void }) {
   const linkReady = KAKAO_CHAT_URL.trim().length > 0;
   const hasNotice = EVENT_NOTICE_SECTIONS.length > 0;
 
@@ -31,9 +32,23 @@ export function EventNotice({ onBack }: { onBack: () => void }) {
                     [{s.heading}]
                   </h3>
                   <ul className="mt-1.5 space-y-1.5">
-                    {s.lines.map((line) => (
-                      <li key={line} className="text-[15px] leading-relaxed text-amber-900/85">
-                        {line}
+                    {s.lines.map((line, i) => (
+                      <li key={i} className="text-[15px] leading-relaxed text-amber-900/85">
+                        {typeof line === "string" ? (
+                          line
+                        ) : (
+                          <>
+                            {line.before}
+                            <button
+                              type="button"
+                              onClick={onShoot}
+                              className="rounded-md bg-amber-200/80 px-1 font-extrabold text-amber-900 underline decoration-amber-500 decoration-2 underline-offset-2 transition active:scale-95"
+                            >
+                              {line.shootLink} 📸
+                            </button>
+                            {line.after}
+                          </>
+                        )}
                       </li>
                     ))}
                   </ul>

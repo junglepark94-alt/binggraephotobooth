@@ -10,16 +10,24 @@ export const EVENT_NOTICE_TITLE = "빙그레네컷 이벤트";
 
 export const EVENT_NOTICE_INTRO = "나만의 빙그레네컷을 촬영하고 특별한 선물도 받아보세요!";
 
+// 공지 한 줄. 문자열이면 그대로 쓰고, 촬영 화면으로 가는 링크를 넣으려면
+// { before, shootLink, after } 형태로 쪼갠다 — shootLink 부분이 하이라이트된 버튼이 된다.
+export type EventNoticeLine = string | { before?: string; shootLink: string; after?: string };
+
 // 구획별 소제목 + 줄 목록(+ 선택적 사진). 비어 있으면 "준비 중" 안내가 대신 표시된다.
 export const EVENT_NOTICE_SECTIONS: {
   heading: string;
-  lines: string[];
+  lines: EventNoticeLine[];
   image?: { src: string; alt: string };
 }[] = [
   {
     heading: "참여 방법",
     lines: [
-      "1. 마음에 드는 제품 프레임을 선택해 빙그레네컷을 촬영해 주세요.",
+      {
+        before: "1. 마음에 드는 제품 프레임을 선택해 ",
+        shootLink: "빙그레네컷을 촬영해 주세요",
+        after: ".",
+      },
       "2. 완성된 사진을 저장해 주세요.",
       "3. 아래 카카오톡 1:1 오픈채팅에 사진을 올리면 참여 완료!",
     ],

@@ -116,7 +116,7 @@ export function Hotspot({
   width: string;
   height: string;
   label: string;
-  cta?: string;
+  cta?: ReactNode; // 두 줄로 쓰고 싶으면 <br />를 넣은 조각을 넘긴다
   ctaY?: number;
   onClick: () => void;
   pulse?: boolean;
@@ -133,7 +133,7 @@ export function Hotspot({
           className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{ top: `${ctaY}%` }}
         >
-          <span className="relative inline-flex items-center whitespace-nowrap rounded-full bg-[#3182F6] px-3.5 py-1.5 text-[13px] font-bold text-white shadow-[0_4px_12px_rgba(49,130,246,0.45)] ring-1 ring-white/60">
+          <span className="relative inline-flex items-center whitespace-nowrap rounded-full bg-[#3182F6] px-3.5 py-1.5 text-center text-[13px] font-bold leading-tight text-white shadow-[0_4px_12px_rgba(49,130,246,0.45)] ring-1 ring-white/60">
             {cta}
             {pulse && (
               <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 animate-bounce place-items-center rounded-full bg-primary text-[10px] font-extrabold text-primary-foreground shadow ring-1 ring-white">

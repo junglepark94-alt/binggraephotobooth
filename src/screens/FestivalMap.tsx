@@ -107,7 +107,13 @@ export function FestivalMap({
           width="28%"
           height="21%"
           label="이벤트 공지"
-          cta="보러가기"
+          cta={
+            <>
+              이벤트
+              <br />
+              참여하기
+            </>
+          }
           ctaY={58}
           onClick={onEvent}
           pulse
